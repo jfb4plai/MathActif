@@ -90,18 +90,40 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
 
 2. MÊME PLAN : l'énoncé et la zone de travail ne peuvent jamais être séparés par un saut de page. Si l'ensemble ne tient pas sur la page courante → insérer [saut_de_page] AVANT l'énoncé, jamais au milieu.
 
-3. MISE EN ÉVIDENCE DONNÉES / INCONNUES : dans tout problème contextualisé, insérer après l'énoncé :
-   Données : …
-   Inconnue(s) : …
+3. MISE EN ÉVIDENCE DONNÉES / INCONNUES : dans tout problème contextualisé ou exercice de calcul, insérer après l'énoncé :
+   Données : …  (les éléments connus identifiés — ex : u(x) = …, v(x) = …)
+   Inconnue(s) : …  (ce que l'élève doit trouver — ex : f'(x))
+   Zone de travail :
+   _______________________________________________
+   _______________________________________________
+   _______________________________________________
+   (3 lignes minimum — 5 lignes si calcul long)
 
-4. DÉCOMPOSITION PROCÉDURALE : si l'exercice implique plusieurs étapes (résolution d'équation, démonstration, construction), les numéroter : Étape 1 : … Étape 2 : …
+4. DÉCOMPOSITION PROCÉDURALE : si l'exercice implique plusieurs étapes (résolution d'équation, démonstration, construction), les numéroter :
+   Étape 1 : [action précise]
+   Étape 2 : [action précise]
+   …
+   Chaque étape suivie de sa propre zone de travail (2 lignes ___) sauf si l'étape est purement informative.
 
-5. FORMULE DE RAPPEL : si le nom d'une formule est mentionné (Pythagore, discriminant, sin/cos/tan, Thalès, etc.), l'insérer en encadré [RAPPEL : …] juste avant l'exercice concerné.
+5. FORMULE DE RAPPEL : si le nom d'une formule est mentionné (Pythagore, discriminant, dérivée, quotient, sin/cos/tan, Thalès, etc.), l'insérer en encadré [RAPPEL : …] juste avant l'exercice concerné.
+   Quand les Données incluent des valeurs dérivées (u', v', f', etc.) calculées par l'AU et non par l'élève, ajouter la mention :
+   → [fourni — à toi d'appliquer la formule]
+   directement après la valeur concernée.
 
 6. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
    Les tokens «MATH_N» représentent des équations protégées. NE JAMAIS les modifier, les déplacer, les supprimer, ni les reformuler.
    Les traiter comme des blocs opaques — ils seront restaurés après génération.
    La règle des 15 mots ne s'applique pas aux consignes contenant des tokens «MATH_N».
+
+NOTATION MATHÉMATIQUE DANS L'AU :
+- Fractions : TOUJOURS sur 3 lignes avec ligne de fraction entre parenthèses.
+  Format OBLIGATOIRE — exemple pour (-4x+1)/(-5x-3) :
+  (-4x + 1)
+  ─────────
+  (-5x − 3)
+  Ne jamais écrire une fraction sur une seule ligne. (u)/(v) horizontal est interdit.
+- Exposants : utiliser les caractères ² ³ (pas ^2), ex : -2x² pas -2x2
+- Dérivée : f'(x) avec apostrophe, jamais "f prime de x"
 
 RÈGLES GÉNÉRALES :
 - Retourner uniquement le document reformaté.

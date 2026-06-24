@@ -38,13 +38,18 @@ Détermine le niveau (S3/S4/S5/S6), le chapitre mathématique (algèbre, géomé
 ÉTAPE 2b — SYMBOLES MATHÉMATIQUES (priorité absolue) :
 - × (multiplication) → jamais "x" ni "X" — toujours ×
 - ÷ (division posée) → ÷
-- − (signe moins) → toujours −, jamais le tiret court -
-- ² ³ (exposants) → caractères Unicode ² ³ (pas "^2")
-- √ (racine carrée) → √, jamais "V"
+- − (signe moins) → toujours le signe moins Unicode −, jamais le tiret court -
+- EXPOSANTS — règle critique : TOUJOURS utiliser les caractères Unicode ² ³ ⁴ ⁿ
+  Exemples : x² (pas x^2, pas x2), -2x² (pas -2x2), 4x² - 5x + 3 (pas 4x2)
+  Si l'exposant est une expression : x^(n+1) avec le caret est acceptable
+- DÉRIVÉES : f'(x) avec apostrophe droite ', jamais f prime(x) ni f´(x)
+- √ (racine carrée) → √, jamais "V" ni "sq"
 - π → π, jamais "pi"
 - ≤ ≥ ≠ → ces symboles, jamais "<=" ">=" "!="
-- Δ (discriminant) → Δ
-- Fractions verticales → notation oblique : a/b ou (2x+1)/(x-3)
+- Δ (discriminant) → Δ, jamais "delta" ni "D"
+- Fractions verticales → 2 lignes séparées par / : numérateur sur une ligne, / sur la suivante, dénominateur sur la suivante.
+  Format : (numérateur) / (dénominateur) — TOUJOURS avec parenthèses si l'expression a plusieurs termes.
+  Exemple : (-4x + 1) / (-5x - 3)  et non  -4x+1/-5x-3
 - Systèmes d'équations (accolade + lignes) → chaque ligne sur sa propre ligne, préfixée "{ "
 - Tableaux de valeurs → conserver " | " comme séparateur
 - Ne jamais confondre la lettre "x" (variable) avec × (multiplication) — le contexte (entouré de chiffres) tranche.

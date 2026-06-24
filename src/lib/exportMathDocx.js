@@ -102,26 +102,74 @@ function metaTable(rows) {
   })]
 }
 
+function isFractionBar(line) {
+  return /^─{3,}$/.test(line.trim())
+}
+
+function fractionParagraphs(num, den) {
+  const barLen = Math.max(num.length, den.length, 6)
+  const bar = '─'.repeat(barLen)
+  return [
+    new Paragraph({
+      alignment: 'center',
+      children: renderMathLine(num),
+      spacing: { after: 0, before: 80 },
+    }),
+    new Paragraph({
+      alignment: 'center',
+      children: [new TextRun({ text: bar, color: BRAND_TEAL, bold: true })],
+      spacing: { after: 0, before: 0 },
+    }),
+    new Paragraph({
+      alignment: 'center',
+      children: renderMathLine(den),
+      spacing: { after: 100, before: 0 },
+    }),
+  ]
+}
+
 function parseMathText(text) {
   if (!text) return [new Paragraph({ text: '—' })]
-  return text.split('\n').map(line => {
-    const trimmed = line.trim()
-    if (!trimmed) return spacer()
-    if (/^\[saut_de_page\]/i.test(trimmed)) return new Paragraph({ text: '', pageBreakBefore: true })
-    const isTitle = /^(Exercice|Étape|Section|##)\s/.test(trimmed)
+  const lines = text.split('\n')
+  const paragraphs = []
+  let i = 0
+  while (i < lines.length) {
+    const trimmed = lines[i].trim()
+
+    // Détection pattern fraction 3 lignes : num / ──── / den
+    if (
+      i + 2 < lines.length &&
+      isFractionBar(lines[i + 1]) &&
+      lines[i + 2].trim()
+    ) {
+      paragraphs.push(...fractionParagraphs(trimmed, lines[i + 2].trim()))
+      i += 3
+      continue
+    }
+
+    if (!trimmed) { paragraphs.push(spacer()); i++; continue }
+    if (/^\[saut_de_page\]/i.test(trimmed)) {
+      paragraphs.push(new Paragraph({ text: '', pageBreakBefore: true })); i++; continue
+    }
+    if (isFractionBar(trimmed)) { i++; continue } // barre orpheline → ignorer
+
+    const isTitle = /^(Exercice|Étape|Section|RAPPEL|##)\s/.test(trimmed)
     if (isTitle) {
-      return new Paragraph({
+      paragraphs.push(new Paragraph({
         children: renderMathLine(trimmed.replace(/^#+\s*/, '')),
         spacing: { before: 200, after: 60 },
         keepNext: true,
-      })
+      }))
+    } else {
+      paragraphs.push(new Paragraph({
+        children: renderMathLine(trimmed),
+        spacing: { after: 100, line: 360, lineRule: 'auto' },
+        keepLines: true,
+      }))
     }
-    return new Paragraph({
-      children: renderMathLine(trimmed),
-      spacing: { after: 100, line: 360, lineRule: 'auto' },
-      keepLines: true,
-    })
-  })
+    i++
+  }
+  return paragraphs
 }
 
 function makeHeader(subtitle, date) {
@@ -168,7 +216,8 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
             size: 16, color: GRAY_TEXT, italics: true,
           })],
           border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'E5E7EB' } },
-          spacing: { before: 400 },
+          spacing: { before: 600, after: 200 },
+          pageBreakBefore: false,
         }),
       ],
     }],
@@ -217,7 +266,8 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
             size: 16, color: GRAY_TEXT, italics: true,
           })],
           border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'E5E7EB' } },
-          spacing: { before: 400 },
+          spacing: { before: 600, after: 200 },
+          pageBreakBefore: false,
         }),
       ],
     }],
