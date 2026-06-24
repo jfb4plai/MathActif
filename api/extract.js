@@ -47,9 +47,10 @@ Détermine le niveau (S3/S4/S5/S6), le chapitre mathématique (algèbre, géomé
 - π → π, jamais "pi"
 - ≤ ≥ ≠ → ces symboles, jamais "<=" ">=" "!="
 - Δ (discriminant) → Δ, jamais "delta" ni "D"
-- Fractions verticales → 2 lignes séparées par / : numérateur sur une ligne, / sur la suivante, dénominateur sur la suivante.
-  Format : (numérateur) / (dénominateur) — TOUJOURS avec parenthèses si l'expression a plusieurs termes.
-  Exemple : (-4x + 1) / (-5x - 3)  et non  -4x+1/-5x-3
+- Fractions verticales → TOUJOURS en notation LaTeX : $\frac{numérateur}{dénominateur}$
+  Exemples : $\frac{-4x+1}{-5x-3}$  $\frac{3x+2}{-2x²+4x-4}$  $\frac{x}{x}$
+  Ne jamais écrire (A)/(B) sur une ligne — toujours $\frac{A}{B}$
+  Si la fraction est dans une expression plus longue : f(x) = $\frac{-4x+1}{-5x-3}
 - Systèmes d'équations (accolade + lignes) → chaque ligne sur sa propre ligne, préfixée "{ "
 - Tableaux de valeurs → conserver " | " comme séparateur
 - Ne jamais confondre la lettre "x" (variable) avec × (multiplication) — le contexte (entouré de chiffres) tranche.

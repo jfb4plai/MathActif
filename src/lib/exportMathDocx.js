@@ -57,6 +57,34 @@ function isComplexLatex(latex) {
     || (latex.match(/\\frac/g) || []).length > 1
 }
 
+/**
+ * Expand $\frac{A}{B}$ → 3 lines : A / ─────── / B
+ * Applied before parseMathText so fractionParagraphs() can render them.
+ * Also handles plain-text fractions (A)/(B) as fallback.
+ */
+function expandAllFractions(text) {
+  if (!text) return text
+  // LaTeX fractions : $\frac{A}{B}$
+  let out = text.replace(
+    /\$\\frac\{([^}]+)\}\{([^}]+)\}\$/g,
+    (_, num, den) => {
+      const n = num.trim()
+      const d = den.trim()
+      return `${n}\n${'─'.repeat(Math.max(n.length, d.length, 6))}\n${d}`
+    }
+  )
+  // Fallback : (A)/(B) plain text (OCR de mauvaise qualité)
+  out = out.replace(
+    /(\([^()]{1,60}\))\s*\/\s*(\([^()]{1,60}\))/g,
+    (_, num, den) => {
+      const n = num.trim()
+      const d = den.trim()
+      return `${n}\n${'─'.repeat(Math.max(n.length, d.length, 6))}\n${d}`
+    }
+  )
+  return out
+}
+
 function renderMathLine(line) {
   const parts = line.split(/(\$[^$\n]+\$)/g)
   return parts.flatMap((part, i) => {
@@ -107,18 +135,6 @@ function metaTable(rows) {
  * Appelé sur le texte AVANT parseMathText pour garantir un rendu visuel correct.
  * Ne touche pas aux tokens «MATH_N» ni aux blocs $LaTeX$.
  */
-export function expandFractions(text) {
-  if (!text) return text
-  // Pattern : une expression entre parenthèses, un slash, une expression entre parenthèses
-  // Exemples : (-4x + 1)/(-5x - 3)  ou  (3x + 2)/(-2x² + 4x - 4)
-  return text.replace(
-    /(\([^()]{1,60}\))\s*\/\s*(\([^()]{1,60}\))/g,
-    (_, num, den) => {
-      const barLen = Math.max(num.trim().length, den.trim().length, 6)
-      return `${num.trim()}\n${'─'.repeat(barLen)}\n${den.trim()}`
-    }
-  )
-}
 
 function isFractionBar(line) {
   return /^─{3,}$/.test(line.trim())
@@ -226,7 +242,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(expandFractions(auTexte)),
+        ...parseMathText(expandAllFractions(auTexte)),
         spacer(),
         new Paragraph({
           children: [new TextRun({
@@ -272,11 +288,11 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(expandFractions(auTexte)),
+        ...parseMathText(expandAllFractions(auTexte)),
         spacer(),
         new Paragraph({ text: '', pageBreakBefore: true }),
         sectionTitle(`Conseils spécifiques — ${profilLabel}`),
-        ...parseMathText(expandFractions(conseilsTexte)),
+        ...parseMathText(expandAllFractions(conseilsTexte)),
         spacer(),
         new Paragraph({
           children: [new TextRun({
