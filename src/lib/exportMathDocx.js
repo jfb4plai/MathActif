@@ -241,17 +241,31 @@ function fractionParagraphs(num, den, keepNextAfter = false) {
   ]
 }
 
-/**
- * Renvoie true si les lignes après l'index i contiennent encore du contenu
- * avant la prochaine ligne vide — i.e. le bloc courant n'est pas terminé.
- * Utilisé pour chaîner keepNext et garantir que énoncé + zone de travail
- * restent sur la même page.
- */
 function blockContinues(lines, i) {
   for (let j = i + 1; j < lines.length; j++) {
     const t = lines[j].trim()
     if (!t) return false
     if (t) return true
+  }
+  return false
+}
+
+/**
+ * Regarde en avant (jusqu'à 2 lignes vides) pour détecter du contenu AU
+ * (Zone de travail, Données, Inconnue, lignes ___).
+ * Permet de chaîner keepNext même quand Haiku insère une ligne vide
+ * entre l'énoncé et la zone de travail.
+ */
+function hasAuContentAhead(lines, i) {
+  let blanks = 0
+  for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
+    const t = lines[j].trim()
+    if (!t) {
+      blanks++
+      if (blanks > 2) return false
+      continue
+    }
+    return /^(Zone de travail|Données\s*:|Inconnue|_{5,})/i.test(t)
   }
   return false
 }
@@ -270,7 +284,7 @@ function parseMathText(text) {
       isFractionBar(lines[i + 1]) &&
       lines[i + 2].trim()
     ) {
-      const keepNextAfter = blockContinues(lines, i + 2)
+      const keepNextAfter = blockContinues(lines, i + 2) || hasAuContentAhead(lines, i + 2)
       paragraphs.push(...fractionParagraphs(trimmed, lines[i + 2].trim(), keepNextAfter))
       i += 3
       continue
@@ -283,20 +297,21 @@ function parseMathText(text) {
     if (isFractionBar(trimmed)) { i++; continue }
 
     const isTitle = /^(Exercice|Étape|Section|RAPPEL|##|AE|AU)\s/.test(trimmed)
-    const stays   = blockContinues(lines, i)
+    // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
+    const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
 
     if (isTitle) {
       paragraphs.push(new Paragraph({
         children: renderMathLine(trimmed.replace(/^#+\s*/, '')),
         spacing: { before: 200, after: 60 },
-        keepNext: true,   // titre toujours collé à ce qui suit
+        keepNext: true,
       }))
     } else {
       paragraphs.push(new Paragraph({
         children: renderMathLine(trimmed),
         spacing: { after: 100, line: 360, lineRule: 'auto' },
         keepLines: true,
-        keepNext: stays,  // reste avec le paragraphe suivant si bloc non terminé
+        keepNext: stays,
       }))
     }
     i++
