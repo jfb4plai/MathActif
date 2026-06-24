@@ -57,7 +57,7 @@ function latexToUnicode(latex) {
 }
 
 function isComplexLatex(latex) {
-  return /\\int|\\sum|\\prod|\\lim|\\begin|\\end|\\matrix|\\pmatrix|\\bmatrix/.test(latex)
+  return /\\begin|\\end|\\matrix|\\pmatrix|\\bmatrix/.test(latex)
     || (latex.match(/\\frac/g) || []).length > 1
 }
 
@@ -100,10 +100,13 @@ function expandLatexToUnicode(text) {
   }
 
   return text.replace(/\$([^$]+)\$/g, (match, inner) => {
-    if (/\\frac\{/.test(inner)) return match          // → expandAllFractions
-    if (/\\begin|\\end/.test(inner)) return `[${latexToUnicode(inner)}]` // matrices → rendu dégradé noir
+    // Fraction PURE $\frac{A}{B}$ → laisser expandAllFractions faire le bloc 3 lignes
+    if (/^\\frac\{/.test(inner.trim())) return match
+    if (/\\begin|\\end/.test(inner)) return `[${latexToUnicode(inner)}]`
 
     let out = inner
+    // 0. Fractions inline \frac{A}{B} → (A)/(B) — pour intégrales et expressions composées
+    out = out.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, n, d) => `(${n})/(${d})`)
     // 1. Symboles grecs et opérateurs
     for (const [cmd, sym] of Object.entries(SYMBOLS)) {
       out = out.replaceAll(cmd, sym)
