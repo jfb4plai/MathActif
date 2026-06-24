@@ -105,7 +105,15 @@ function expandLatexToUnicode(text) {
     if (/\\begin|\\end/.test(inner)) return `[${latexToUnicode(inner)}]`
 
     let out = inner
-    // 0. Fractions inline \frac{A}{B} → (A)/(B) — pour intégrales et expressions composées
+    // 0a. Espaces LaTeX → espace simple
+    out = out.replace(/\\[,;:!]/g, ' ')
+    // 0b. \left \right → supprimer (garder juste le délimiteur qui suit)
+    out = out.replace(/\\(?:left|right)\s*/g, '')
+    // 0c. Racines nièmes : \sqrt[N]{expr} — avant le handler \sqrt{...} ci-dessous
+    out = out.replace(/\\sqrt\[3\]\{([^}]+)\}/g, (_, e) => `∛(${e})`)
+    out = out.replace(/\\sqrt\[4\]\{([^}]+)\}/g, (_, e) => `∜(${e})`)
+    out = out.replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, (_, n, e) => `[${n}]√(${e})`)
+    // 0d. Fractions inline \frac{A}{B} → (A)/(B) — pour intégrales et expressions composées
     out = out.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, n, d) => `(${n})/(${d})`)
     // 1. Symboles grecs et opérateurs
     for (const [cmd, sym] of Object.entries(SYMBOLS)) {
