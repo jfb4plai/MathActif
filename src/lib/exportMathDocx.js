@@ -343,7 +343,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         new Paragraph({
           children: [new TextRun({
             text: 'Sources RISS — CUA : Rusconi (2025) W4414205903 · Alvarez (2024) W4402615917  |  Maths & IA : Mahi Haddad & Beaud (2025) dumas-05106961',
-            size: 16, color: GRAY_TEXT, italics: true,
+            size: 20, color: GRAY_TEXT, italics: true,
           })],
           border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'E5E7EB' } },
           spacing: { before: 600, after: 200 },
@@ -393,7 +393,7 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         new Paragraph({
           children: [new TextRun({
             text: 'Sources RISS — Dyscalculie : Thibaut (2016) dumas-01488139 · Le Cam & Toussaint (2017) dumas-01549091  |  Mahi Haddad & Beaud (2025) dumas-05106961',
-            size: 16, color: GRAY_TEXT, italics: true,
+            size: 20, color: GRAY_TEXT, italics: true,
           })],
           border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'E5E7EB' } },
           spacing: { before: 600, after: 200 },
