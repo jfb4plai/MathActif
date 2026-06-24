@@ -97,7 +97,7 @@ function expandLatexToUnicode(text) {
 
   return text.replace(/\$([^$]+)\$/g, (match, inner) => {
     if (/\\frac\{/.test(inner)) return match          // → expandAllFractions
-    if (/\\begin|\\end/.test(inner)) return match     // matrices → trop complexe
+    if (/\\begin|\\end/.test(inner)) return `[${latexToUnicode(inner)}]` // matrices → rendu dégradé noir
 
     let out = inner
     // 1. Symboles grecs et opérateurs
