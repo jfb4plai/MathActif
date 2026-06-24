@@ -58,14 +58,83 @@ function isComplexLatex(latex) {
 }
 
 /**
+ * Convertit les blocs $LaTeX$ simples en Unicode lisible.
+ * Exclut \frac (géré par expandAllFractions) et \begin/\end (matrices — trop complexe).
+ * Pipeline : greques → opérateurs → √ → exposants → indices → nettoyage accolades.
+ */
+function expandLatexToUnicode(text) {
+  if (!text) return text
+
+  const SUPER = {
+    '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹',
+    'n':'ⁿ','i':'ⁱ','k':'ᵏ','x':'ˣ','a':'ᵃ','b':'ᵇ','p':'ᵖ',
+  }
+  const SUB = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉' }
+
+  const SYMBOLS = {
+    '\\pi':'π','\\Pi':'Π','\\alpha':'α','\\beta':'β','\\gamma':'γ','\\Gamma':'Γ',
+    '\\delta':'δ','\\Delta':'Δ','\\epsilon':'ε','\\varepsilon':'ε',
+    '\\theta':'θ','\\Theta':'Θ','\\lambda':'λ','\\mu':'μ','\\nu':'ν','\\xi':'ξ',
+    '\\sigma':'σ','\\Sigma':'Σ','\\tau':'τ','\\phi':'φ','\\Phi':'Φ',
+    '\\chi':'χ','\\psi':'ψ','\\Psi':'Ψ','\\omega':'ω','\\Omega':'Ω',
+    '\\infty':'∞','\\pm':'±','\\mp':'∓',
+    '\\times':'×','\\div':'÷','\\cdot':'·','\\circ':'∘',
+    '\\leq':'≤','\\geq':'≥','\\neq':'≠','\\approx':'≈','\\sim':'∼',
+    '\\in':'∈','\\notin':'∉','\\subset':'⊂','\\supset':'⊃',
+    '\\cup':'∪','\\cap':'∩','\\emptyset':'∅',
+    '\\to':'→','\\rightarrow':'→','\\leftarrow':'←',
+    '\\Rightarrow':'⇒','\\Leftarrow':'⇐','\\Leftrightarrow':'⟺',
+    '\\forall':'∀','\\exists':'∃',
+    '\\partial':'∂','\\nabla':'∇',
+    '\\int':'∫','\\iint':'∬','\\oint':'∮',
+    '\\sum':'Σ','\\prod':'Π',
+    '\\lim':'lim','\\min':'min','\\max':'max',
+    '\\sin':'sin','\\cos':'cos','\\tan':'tan',
+    '\\arcsin':'arcsin','\\arccos':'arccos','\\arctan':'arctan',
+    '\\ln':'ln','\\log':'log','\\exp':'exp',
+    '\\ldots':'…','\\cdots':'⋯',
+  }
+
+  return text.replace(/\$([^$]+)\$/g, (match, inner) => {
+    if (/\\frac\{/.test(inner)) return match          // → expandAllFractions
+    if (/\\begin|\\end/.test(inner)) return match     // matrices → trop complexe
+
+    let out = inner
+    // 1. Symboles grecs et opérateurs
+    for (const [cmd, sym] of Object.entries(SYMBOLS)) {
+      out = out.replaceAll(cmd, sym)
+    }
+    // 2. Racines carrées : \sqrt{expr}
+    out = out.replace(/\\sqrt\{([^}]+)\}/g, (_, e) => e.length <= 2 ? `√${e}` : `√(${e})`)
+    out = out.replace(/\\sqrt\s*([a-zA-Z0-9])/g, '√$1')
+    // 3. Exposants : ^{expr} ou ^c
+    out = out.replace(/\^\{([^}]+)\}/g, (_, e) =>
+      e.length === 1 && SUPER[e] ? SUPER[e] : `^(${e})`
+    )
+    out = out.replace(/\^([0-9nxkiabp])/g, (_, e) => SUPER[e] || `^${e}`)
+    // 4. Indices : _{expr} ou _c
+    out = out.replace(/\_\{([^}]+)\}/g, (_, s) =>
+      s.length === 1 && SUB[s] ? SUB[s] : `_(${s})`
+    )
+    out = out.replace(/_([0-9])/g, (_, s) => SUB[s] || `_${s}`)
+    // 5. Nettoyage accolades et commandes LaTeX restantes
+    out = out.replace(/[{}]/g, '')
+    out = out.replace(/\\([a-zA-Z]+)/g, '$1')   // \foo → foo
+    return out
+  })
+}
+
+/**
  * Expand $\frac{A}{B}$ → 3 lines : A / ─────── / B
  * Applied before parseMathText so fractionParagraphs() can render them.
  * Also handles plain-text fractions (A)/(B) as fallback.
  */
 function expandAllFractions(text) {
   if (!text) return text
-  // LaTeX fractions : $\frac{A}{B}$
-  let out = text.replace(
+  // 1. D'abord convertir tous les $LaTeX$ simples en Unicode
+  let out = expandLatexToUnicode(text)
+  // 2. LaTeX fractions : $\frac{A}{B}$
+  out = out.replace(
     /\$\\frac\{([^}]+)\}\{([^}]+)\}\$/g,
     (_, num, den) => {
       const n = num.trim()
