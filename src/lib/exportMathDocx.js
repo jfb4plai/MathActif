@@ -102,6 +102,24 @@ function metaTable(rows) {
   })]
 }
 
+/**
+ * Convertit les fractions texte (A)/(B) ou A/B en format 3 lignes avec barre ─────
+ * Appelé sur le texte AVANT parseMathText pour garantir un rendu visuel correct.
+ * Ne touche pas aux tokens «MATH_N» ni aux blocs $LaTeX$.
+ */
+export function expandFractions(text) {
+  if (!text) return text
+  // Pattern : une expression entre parenthèses, un slash, une expression entre parenthèses
+  // Exemples : (-4x + 1)/(-5x - 3)  ou  (3x + 2)/(-2x² + 4x - 4)
+  return text.replace(
+    /(\([^()]{1,60}\))\s*\/\s*(\([^()]{1,60}\))/g,
+    (_, num, den) => {
+      const barLen = Math.max(num.trim().length, den.trim().length, 6)
+      return `${num.trim()}\n${'─'.repeat(barLen)}\n${den.trim()}`
+    }
+  )
+}
+
 function isFractionBar(line) {
   return /^─{3,}$/.test(line.trim())
 }
@@ -208,7 +226,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(auTexte),
+        ...parseMathText(expandFractions(auTexte)),
         spacer(),
         new Paragraph({
           children: [new TextRun({
@@ -254,11 +272,11 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(auTexte),
+        ...parseMathText(expandFractions(auTexte)),
         spacer(),
         new Paragraph({ text: '', pageBreakBefore: true }),
         sectionTitle(`Conseils spécifiques — ${profilLabel}`),
-        ...parseMathText(conseilsTexte),
+        ...parseMathText(expandFractions(conseilsTexte)),
         spacer(),
         new Paragraph({
           children: [new TextRun({
