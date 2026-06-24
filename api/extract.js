@@ -47,10 +47,16 @@ Détermine le niveau (S3/S4/S5/S6), le chapitre mathématique (algèbre, géomé
 - π → π, jamais "pi"
 - ≤ ≥ ≠ → ces symboles, jamais "<=" ">=" "!="
 - Δ (discriminant) → Δ, jamais "delta" ni "D"
+- INTÉGRALES — règle critique : le signe ∫ est TOUJOURS transcrit en LaTeX $\int$
+  Jamais "et", jamais "ʃ", jamais le caractère Unicode ∫ seul hors LaTeX
+  Format : $\int f(x)\,dx$ ou $\int (expr)\,dx$
+  Exemples : $\int (3x^4+5x^2-2x+1)/\sqrt{x^2}\,dx$  $\int \frac{2x+1}{x-3}\,dx$  $\int 3^x\,dx$
+  Si l'intégrale contient une fraction verticale, utiliser \frac : $\int \frac{numérateur}{dénominateur}\,dx$
+  Ne JAMAIS utiliser \begin{aligned}...\end{aligned} pour une intégrale simple — juste $\int ...$
 - Fractions verticales → TOUJOURS en notation LaTeX : $\frac{numérateur}{dénominateur}$
   Exemples : $\frac{-4x+1}{-5x-3}$  $\frac{3x+2}{-2x²+4x-4}$  $\frac{x}{x}$
   Ne jamais écrire (A)/(B) sur une ligne — toujours $\frac{A}{B}$
-  Si la fraction est dans une expression plus longue : f(x) = $\frac{-4x+1}{-5x-3}
+  Si la fraction est dans une expression plus longue : f(x) = $\frac{-4x+1}{-5x-3}$
 - Systèmes d'équations (accolade + lignes) → chaque ligne sur sa propre ligne, préfixée "{ "
 - Tableaux de valeurs → conserver " | " comme séparateur
 - Ne jamais confondre la lettre "x" (variable) avec × (multiplication) — le contexte (entouré de chiffres) tranche.
