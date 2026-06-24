@@ -73,10 +73,14 @@ function expandAllFractions(text) {
       return `${n}\n${'─'.repeat(Math.max(n.length, d.length, 6))}\n${d}`
     }
   )
-  // Fallback : (A)/(B) plain text (OCR de mauvaise qualité)
+  // Fallback : (A)/(B) — seulement si A et B contiennent des maths (chiffres/variables)
+  // Évite de découper les lignes "Données : u(x) = (-4x+1)" qui ne sont pas des fractions
   out = out.replace(
-    /(\([^()]{1,60}\))\s*\/\s*(\([^()]{1,60}\))/g,
-    (_, num, den) => {
+    /(\([^()]{2,60}\))\s*\/\s*(\([^()]{2,60}\))/g,
+    (match, num, den) => {
+      // Ne remplacer que si les deux termes ressemblent à des expressions mathématiques
+      const isMath = s => /[0-9x²³]/.test(s) && /[+\-]/.test(s)
+      if (!isMath(num) || !isMath(den)) return match
       const n = num.trim()
       const d = den.trim()
       return `${n}\n${'─'.repeat(Math.max(n.length, d.length, 6))}\n${d}`

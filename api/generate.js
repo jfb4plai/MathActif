@@ -90,25 +90,22 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
 
 2. MÊME PLAN : l'énoncé et la zone de travail ne peuvent jamais être séparés par un saut de page. Si l'ensemble ne tient pas sur la page courante → insérer [saut_de_page] AVANT l'énoncé, jamais au milieu.
 
-3. MISE EN ÉVIDENCE DONNÉES / INCONNUES : dans tout problème contextualisé ou exercice de calcul, insérer après l'énoncé :
-   Données : …  (les éléments connus identifiés — ex : u(x) = …, v(x) = …)
-   Inconnue(s) : …  (ce que l'élève doit trouver — ex : f'(x))
+3. MISE EN ÉVIDENCE DONNÉES / INCONNUES : dans tout exercice de calcul, insérer après l'énoncé :
+   Données : u(x) = … ; v(x) = … ; u'(x) = … [fourni] ; v'(x) = … [fourni]
+   (chaque variable UNE SEULE FOIS — ne jamais répéter u(x) ou v(x))
+   Inconnue(s) : f'(x)
    Zone de travail :
    _______________________________________________
    _______________________________________________
    _______________________________________________
-   (3 lignes minimum — 5 lignes si calcul long)
+   (exactement 3 lignes — ni plus, ni moins)
 
-4. DÉCOMPOSITION PROCÉDURALE : si l'exercice implique plusieurs étapes (résolution d'équation, démonstration, construction), les numéroter :
-   Étape 1 : [action précise]
-   Étape 2 : [action précise]
-   …
-   Chaque étape suivie de sa propre zone de travail (2 lignes ___) sauf si l'étape est purement informative.
+4. DÉCOMPOSITION PROCÉDURALE : uniquement si l'exercice a des étapes distinctes non évidentes.
+   Pour les exercices de dérivation standard (u/v), ne pas décomposer — la formule de rappel suffit.
+   Si décomposition utile : Étape 1 : … / Étape 2 : … (max 3 étapes, sans zone de travail par étape).
 
 5. FORMULE DE RAPPEL : si le nom d'une formule est mentionné (Pythagore, discriminant, dérivée, quotient, sin/cos/tan, Thalès, etc.), l'insérer en encadré [RAPPEL : …] juste avant l'exercice concerné.
-   Quand les Données incluent des valeurs dérivées (u', v', f', etc.) calculées par l'AU et non par l'élève, ajouter la mention :
-   → [fourni — à toi d'appliquer la formule]
-   directement après la valeur concernée.
+   Les valeurs u'(x) et v'(x) dans les Données sont fournies par l'AU — indiquer [fourni] après chacune.
 
 6. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
    Les tokens «MATH_N» représentent des équations protégées. NE JAMAIS les modifier, les déplacer, les supprimer, ni les reformuler.
