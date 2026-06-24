@@ -123,8 +123,10 @@ NOTATION MATHÉMATIQUE DANS L'AU :
 - Dérivée : f'(x) avec apostrophe, jamais "f prime de x"
 
 RÈGLES GÉNÉRALES :
-- Retourner uniquement le document reformaté.
-- Conserver tout le contenu original.
+- Produire UNE SEULE version : le document avec AU intégrés — PAS l'original suivi de l'AU.
+- Ne jamais reproduire la liste des exercices en résumé ou en tête de document.
+- Commencer directement par le premier exercice avec ses AU.
+- Conserver tous les énoncés originaux tels quels (les intégrer dans la structure AU).
 - Aucun commentaire ni introduction.
 - Guillemets français : « mot » — jamais " ou "
 

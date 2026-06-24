@@ -163,10 +163,12 @@ function renderMathLine(line) {
   return parts.flatMap((part, i) => {
     if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
       const latex = part.slice(1, -1)
+      // expandLatexToUnicode gère déjà la conversion — les $...$ résiduels
+      // sont des cas complexes (\begin, fractions imbriquées) : rendu noir sans $
       const display = isComplexLatex(latex)
         ? `[${latexToUnicode(latex)}]`
         : latexToUnicode(latex)
-      return [new TextRun({ text: display, bold: true, color: BRAND_TEAL })]
+      return [new TextRun({ text: display })]
     }
     return part ? [new TextRun({ text: part })] : []
   })
