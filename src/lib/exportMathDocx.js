@@ -144,7 +144,7 @@ function isFractionBar(line) {
   return /^─{3,}$/.test(line.trim())
 }
 
-function fractionParagraphs(num, den) {
+function fractionParagraphs(num, den, keepNextAfter = false) {
   const barLen = Math.max(num.length, den.length, 6)
   const bar = '─'.repeat(barLen)
   return [
@@ -152,18 +152,37 @@ function fractionParagraphs(num, den) {
       alignment: 'center',
       children: renderMathLine(num),
       spacing: { after: 0, before: 80 },
+      keepLines: true,
+      keepNext: true,   // numérateur toujours collé à la barre
     }),
     new Paragraph({
       alignment: 'center',
       children: [new TextRun({ text: bar, color: BRAND_TEAL, bold: true })],
       spacing: { after: 0, before: 0 },
+      keepNext: true,   // barre toujours collée au dénominateur
     }),
     new Paragraph({
       alignment: 'center',
       children: renderMathLine(den),
       spacing: { after: 100, before: 0 },
+      keepNext: keepNextAfter,  // le dénominateur reste avec la suite si le bloc continue
     }),
   ]
+}
+
+/**
+ * Renvoie true si les lignes après l'index i contiennent encore du contenu
+ * avant la prochaine ligne vide — i.e. le bloc courant n'est pas terminé.
+ * Utilisé pour chaîner keepNext et garantir que énoncé + zone de travail
+ * restent sur la même page.
+ */
+function blockContinues(lines, i) {
+  for (let j = i + 1; j < lines.length; j++) {
+    const t = lines[j].trim()
+    if (!t) return false
+    if (t) return true
+  }
+  return false
 }
 
 function parseMathText(text) {
@@ -180,7 +199,8 @@ function parseMathText(text) {
       isFractionBar(lines[i + 1]) &&
       lines[i + 2].trim()
     ) {
-      paragraphs.push(...fractionParagraphs(trimmed, lines[i + 2].trim()))
+      const keepNextAfter = blockContinues(lines, i + 2)
+      paragraphs.push(...fractionParagraphs(trimmed, lines[i + 2].trim(), keepNextAfter))
       i += 3
       continue
     }
@@ -189,20 +209,23 @@ function parseMathText(text) {
     if (/^\[saut_de_page\]/i.test(trimmed)) {
       paragraphs.push(new Paragraph({ text: '', pageBreakBefore: true })); i++; continue
     }
-    if (isFractionBar(trimmed)) { i++; continue } // barre orpheline → ignorer
+    if (isFractionBar(trimmed)) { i++; continue }
 
-    const isTitle = /^(Exercice|Étape|Section|RAPPEL|##)\s/.test(trimmed)
+    const isTitle = /^(Exercice|Étape|Section|RAPPEL|##|AE|AU)\s/.test(trimmed)
+    const stays   = blockContinues(lines, i)
+
     if (isTitle) {
       paragraphs.push(new Paragraph({
         children: renderMathLine(trimmed.replace(/^#+\s*/, '')),
         spacing: { before: 200, after: 60 },
-        keepNext: true,
+        keepNext: true,   // titre toujours collé à ce qui suit
       }))
     } else {
       paragraphs.push(new Paragraph({
         children: renderMathLine(trimmed),
         spacing: { after: 100, line: 360, lineRule: 'auto' },
         keepLines: true,
+        keepNext: stays,  // reste avec le paragraphe suivant si bloc non terminé
       }))
     }
     i++
