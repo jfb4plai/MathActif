@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-jfb-noir text-white px-4 py-2 rounded-lg font-medium hover:bg-jfb-noir-doux transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-white text-jfb-rose border border-jfb-gris-cl px-4 py-2 rounded-lg font-medium hover:bg-jfb-beige transition-colors;
+  }
+  .btn-accent {
+    @apply bg-jfb-rose text-white px-4 py-2 rounded-lg font-medium hover:bg-jfb-rose-dk transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+  .input {
+    @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-jfb-rose focus:border-transparent;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
 /* ── Style guide PLAI — partagé Login + TeacherDashboard ── */
 :root {
   --bg: #faf9f7;
