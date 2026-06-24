@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ── Style guide PLAI — partagé Login + TeacherDashboard ── */
 :root {
   --bg: #faf9f7;

@@ -50,8 +50,8 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <LogoPlai size="lg" />
           </div>
-          <h1 className="text-3xl font-bold text-jfb-noir">DiffActif</h1>
-          <p className="text-jfb-rose mt-1 text-sm">Différenciation pédagogique — PLAI</p>
+          <h1 className="text-3xl font-bold text-jfb-noir">MathActif</h1>
+          <p className="text-jfb-rose mt-1 text-sm">Adaptation maths S3-S6 — PLAI</p>
         </div>
 
         <div className="card">
