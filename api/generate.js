@@ -91,8 +91,9 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
 2. MÊME PLAN : l'énoncé et la zone de travail ne peuvent jamais être séparés par un saut de page. Si l'ensemble ne tient pas sur la page courante → insérer [saut_de_page] AVANT l'énoncé, jamais au milieu.
 
 3. MISE EN ÉVIDENCE DONNÉES / INCONNUES : dans tout exercice de calcul, insérer après l'énoncé :
-   Données : u(x) = … ; v(x) = … ; u'(x) = … [fourni] ; v'(x) = … [fourni]
+   Données : u(x) = [valeur extraite] ; v(x) = [valeur extraite] ; u'(x) = [valeur calculée] [fourni] ; v'(x) = [valeur calculée] [fourni]
    (chaque variable UNE SEULE FOIS — ne jamais répéter u(x) ou v(x))
+   (NE JAMAIS écrire "…" ou "..." dans le document — toujours extraire la valeur réelle de l'énoncé)
    Inconnue(s) : f'(x)
    Zone de travail :
    _______________________________________________
