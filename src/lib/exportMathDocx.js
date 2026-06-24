@@ -290,7 +290,17 @@ function parseMathText(text) {
       continue
     }
 
-    if (!trimmed) { paragraphs.push(spacer()); i++; continue }
+    if (!trimmed) {
+      // Si du contenu AU suit (Zone de travail, Données, ___), le spacer doit
+      // garder keepNext pour ne pas rompre la chaîne de pagination.
+      const zdtAhead = hasAuContentAhead(lines, i)
+      paragraphs.push(zdtAhead
+        ? new Paragraph({ text: '', spacing: { after: 160 }, keepNext: true })
+        : spacer()
+      )
+      i++
+      continue
+    }
     if (/^\[saut_de_page\]/i.test(trimmed)) {
       paragraphs.push(new Paragraph({ text: '', pageBreakBefore: true })); i++; continue
     }
