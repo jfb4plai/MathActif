@@ -273,6 +273,9 @@ export default function MathAdapter() {
             <div>
               <h2 className="font-semibold text-gray-800">Document AU universel</h2>
               <p className="text-xs text-gray-500 mt-0.5">Aménagements Universels — version distribuée à toute la classe</p>
+              <p className="text-xs text-teal-700 mt-1.5 font-medium">
+                Fondé sur la recherche RISS — Numérotation, même plan, zone de travail, formule de rappel (Rusconi 2025 · Alvarez 2024 · Mahi Haddad &amp; Beaud 2025)
+              </p>
             </div>
             <button onClick={genererAU} disabled={generatingAu}
               className="btn-secondary text-sm whitespace-nowrap">
