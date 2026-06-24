@@ -306,19 +306,21 @@ function parseMathText(text) {
     }
     if (isFractionBar(trimmed)) { i++; continue }
 
-    const isTitle = /^(Exercice|Étape|Section|RAPPEL|##|AE|AU)\s/.test(trimmed)
+    // Strip markdown bold markers (**...**) produits par Haiku
+    const display = trimmed.replace(/^\*\*(.+)\*\*$/, '$1')
+    const isTitle = /^(Exercice|Étape|Section|RAPPEL|##|AE|AU)\s/.test(display)
     // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
     const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
 
     if (isTitle) {
       paragraphs.push(new Paragraph({
-        children: renderMathLine(trimmed.replace(/^#+\s*/, '')),
+        children: renderMathLine(display.replace(/^#+\s*/, '')),
         spacing: { before: 200, after: 60 },
         keepNext: true,
       }))
     } else {
       paragraphs.push(new Paragraph({
-        children: renderMathLine(trimmed),
+        children: renderMathLine(display),
         spacing: { after: 100, line: 360, lineRule: 'auto' },
         keepLines: true,
         keepNext: stays,
