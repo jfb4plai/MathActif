@@ -107,17 +107,18 @@ function expandLatexToUnicode(text) {
     let out = inner
     // 0a. Espaces LaTeX → espace simple
     out = out.replace(/\\[,;:!]/g, ' ')
-    // 0b. \left \right → supprimer (garder juste le délimiteur qui suit)
-    out = out.replace(/\\(?:left|right)\s*/g, '')
+    // 0b. \left \right → supprimer seulement devant un délimiteur, pas \rightarrow
+    out = out.replace(/\\(?:left|right)(?=[^a-zA-Z])/g, '')
     // 0c. Racines nièmes : \sqrt[N]{expr} — avant le handler \sqrt{...} ci-dessous
     out = out.replace(/\\sqrt\[3\]\{([^}]+)\}/g, (_, e) => `∛(${e})`)
     out = out.replace(/\\sqrt\[4\]\{([^}]+)\}/g, (_, e) => `∜(${e})`)
     out = out.replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, (_, n, e) => `[${n}]√(${e})`)
     // 0d. Fractions inline \frac{A}{B} → (A)/(B) — pour intégrales et expressions composées
     out = out.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, n, d) => `(${n})/(${d})`)
-    // 1. Symboles grecs et opérateurs
+    // 1. Symboles grecs et opérateurs — lookahead (?![a-zA-Z]) évite \in de corrompre \int
     for (const [cmd, sym] of Object.entries(SYMBOLS)) {
-      out = out.replaceAll(cmd, sym)
+      const escaped = cmd.replace(/\\/g, '\\\\')
+      out = out.replace(new RegExp(escaped + '(?![a-zA-Z])', 'g'), sym)
     }
     // 2. Racines carrées : \sqrt{expr}
     out = out.replace(/\\sqrt\{([^}]+)\}/g, (_, e) => e.length <= 2 ? `√${e}` : `√(${e})`)
