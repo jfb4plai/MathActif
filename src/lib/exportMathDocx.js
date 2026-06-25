@@ -105,16 +105,19 @@ function expandLatexToUnicode(text) {
     if (/\\begin|\\end/.test(inner)) return `[${latexToUnicode(inner)}]`
 
     let out = inner
-    // 0a. Espaces LaTeX → espace simple
-    out = out.replace(/\\[,;:!]/g, ' ')
+    // 0a. Espaces LaTeX (thin/medium/hard) → espace simple
+    out = out.replace(/\\[,;:! ]/g, ' ')
     // 0b. \left \right → supprimer seulement devant un délimiteur, pas \rightarrow
     out = out.replace(/\\(?:left|right)(?=[^a-zA-Z])/g, '')
     // 0c. Racines nièmes : \sqrt[N]{expr} — avant le handler \sqrt{...} ci-dessous
     out = out.replace(/\\sqrt\[3\]\{([^}]+)\}/g, (_, e) => `∛(${e})`)
     out = out.replace(/\\sqrt\[4\]\{([^}]+)\}/g, (_, e) => `∜(${e})`)
     out = out.replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, (_, n, e) => `[${n}]√(${e})`)
-    // 0d. Fractions inline \frac{A}{B} → (A)/(B) — pour intégrales et expressions composées
-    out = out.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, n, d) => `(${n})/(${d})`)
+    // 0d. Fractions inline \frac{A}{B} — parens seulement si expression composée (+ ou -)
+    out = out.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (_, n, d) => {
+      const wrap = s => { const t = s.trim(); return (t.startsWith('(') || !/[+\-]/.test(t)) ? t : `(${t})` }
+      return `${wrap(n)}/${wrap(d)}`
+    })
     // 1. Symboles grecs et opérateurs — lookahead (?![a-zA-Z]) évite \in de corrompre \int
     for (const [cmd, sym] of Object.entries(SYMBOLS)) {
       const escaped = cmd.replace(/\\/g, '\\\\')
@@ -136,6 +139,7 @@ function expandLatexToUnicode(text) {
     // 5. Nettoyage accolades et commandes LaTeX restantes
     out = out.replace(/[{}]/g, '')
     out = out.replace(/\\([a-zA-Z]+)/g, '$1')   // \foo → foo
+    out = out.replace(/\\/g, '')               // backslashes résiduels (\ , \( , etc.)
     return out
   })
 }
