@@ -1,13 +1,15 @@
 /**
  * Export DOCX — MathActif
- * Équations : LaTeX → Unicode texte (couvre ~80% cas S3-S6)
- * Équations complexes (intégrales, matrices) → texte entre crochets colorés
+ * Équations $LaTeX$ → OMML (Word native math) via docx v9.6.1
+ * Fractions AU texte (3 lignes ─────) → rendu graphique conservé
  */
 
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
   BorderStyle, Table, TableRow, TableCell,
   WidthType, ShadingType, Header,
+  Math as DocxMath, MathRun, MathFraction, MathRadical,
+  MathSuperScript, MathSubScript, MathIntegral,
 } from 'docx'
 import { saveAs } from 'file-saver'
 import { PROFILS, NIVEAUX, TYPES_ENSEIGNEMENT } from './constants'
@@ -144,6 +146,192 @@ function expandLatexToUnicode(text) {
   })
 }
 
+// ─── OMML — LaTeX → Word Native Math (docx v9.6.1) ──────────────────────────
+
+function readBraceGroup(s, i) {
+  if (i >= s.length) return { content: '', end: i }
+  if (s[i] !== '{') return { content: s[i], end: i + 1 }
+  let depth = 0, start = i + 1; i++
+  while (i < s.length) {
+    if (s[i] === '{') depth++
+    else if (s[i] === '}') { if (depth === 0) return { content: s.slice(start, i), end: i + 1 }; depth-- }
+    i++
+  }
+  return { content: s.slice(start), end: s.length }
+}
+
+function readOptGroup(s, i) {
+  if (i >= s.length || s[i] !== '[') return null
+  let start = i + 1; i++
+  while (i < s.length && s[i] !== ']') i++
+  return { content: s.slice(start, i), end: i + 1 }
+}
+
+const OMML_SYM = {
+  '\\pi':'π','\\Pi':'Π','\\alpha':'α','\\beta':'β','\\gamma':'γ','\\Gamma':'Γ',
+  '\\delta':'δ','\\Delta':'Δ','\\epsilon':'ε','\\varepsilon':'ε',
+  '\\theta':'θ','\\Theta':'Θ','\\lambda':'λ','\\mu':'μ','\\nu':'ν','\\xi':'ξ',
+  '\\sigma':'σ','\\Sigma':'Σ','\\tau':'τ','\\phi':'φ','\\Phi':'Φ',
+  '\\chi':'χ','\\psi':'ψ','\\Psi':'Ψ','\\omega':'ω','\\Omega':'Ω',
+  '\\infty':'∞','\\partial':'∂','\\nabla':'∇',
+  '\\times':'×','\\div':'÷','\\cdot':'·','\\circ':'∘','\\pm':'±','\\mp':'∓',
+  '\\leq':'≤','\\geq':'≥','\\neq':'≠','\\approx':'≈','\\sim':'∼',
+  '\\in':'∈','\\notin':'∉','\\subset':'⊂','\\supset':'⊃',
+  '\\cup':'∪','\\cap':'∩','\\emptyset':'∅',
+  '\\to':'→','\\rightarrow':'→','\\leftarrow':'←',
+  '\\Rightarrow':'⇒','\\Leftarrow':'⇐','\\Leftrightarrow':'⟺',
+  '\\forall':'∀','\\exists':'∃',
+  '\\iint':'∬','\\oint':'∮','\\sum':'Σ','\\prod':'Π',
+  '\\lim':'lim','\\min':'min','\\max':'max',
+  '\\sin':'sin','\\cos':'cos','\\tan':'tan',
+  '\\arcsin':'arcsin','\\arccos':'arccos','\\arctan':'arctan',
+  '\\ln':'ln','\\log':'log','\\exp':'exp',
+  '\\ldots':'…','\\cdots':'⋯',
+}
+
+function latexToOmml(s) {
+  s = (s || '').trim()
+  if (!s) return [new MathRun('')]
+  if (/\\begin/.test(s)) {
+    const text = s.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}\[\]]/g, '').replace(/\s+/g, ' ').trim()
+    return [new MathRun(text || s)]
+  }
+
+  const nodes = []
+  let i = 0, textBuf = ''
+
+  const flushText = () => { if (textBuf) { nodes.push(new MathRun(textBuf)); textBuf = '' } }
+
+  const popAtom = () => {
+    if (textBuf.length > 0) {
+      if (textBuf.endsWith(')')) {
+        let depth = 0, j = textBuf.length - 1
+        while (j >= 0) {
+          if (textBuf[j] === ')') depth++
+          else if (textBuf[j] === '(') { if (--depth === 0) break }
+          j--
+        }
+        const pre = textBuf.slice(0, j), grp = textBuf.slice(j)
+        textBuf = ''; if (pre) nodes.push(new MathRun(pre))
+        return new MathRun(grp)
+      }
+      const last = textBuf.slice(-1), pre = textBuf.slice(0, -1)
+      textBuf = ''; if (pre) nodes.push(new MathRun(pre))
+      return new MathRun(last)
+    }
+    return nodes.length ? nodes.pop() : new MathRun('')
+  }
+
+  while (i < s.length) {
+    const rest = s.slice(i)
+
+    // LaTeX spacing → espace simple
+    if (/^\\[,;:! ]/.test(rest)) { textBuf += ' '; i += 2; continue }
+
+    // \left / \right devant délimiteur (pas \leftarrow / \rightarrow)
+    if (/^\\(?:left|right)(?=[^a-zA-Z])/.test(rest)) {
+      i += rest.match(/^\\(?:left|right)/)[0].length; continue
+    }
+
+    // \frac{num}{den}
+    if (/^\\frac(?![a-zA-Z])/.test(rest)) {
+      flushText(); i += 5
+      while (i < s.length && s[i] === ' ') i++
+      const num = readBraceGroup(s, i); i = num.end
+      while (i < s.length && s[i] === ' ') i++
+      const den = readBraceGroup(s, i); i = den.end
+      nodes.push(new MathFraction({
+        numerator: latexToOmml(num.content),
+        denominator: latexToOmml(den.content),
+      }))
+      continue
+    }
+
+    // \sqrt[n]{A} ou \sqrt{A}
+    if (/^\\sqrt(?![a-zA-Z])/.test(rest)) {
+      flushText(); i += 5
+      const optDeg = readOptGroup(s, i)
+      const degree = optDeg ? (i = optDeg.end, latexToOmml(optDeg.content)) : undefined
+      while (i < s.length && s[i] === ' ') i++
+      const arg = readBraceGroup(s, i); i = arg.end
+      nodes.push(new MathRadical({ degree, children: latexToOmml(arg.content) }))
+      continue
+    }
+
+    // \int — le reste de l'expression = intégrande
+    if (/^\\int(?![a-zA-Z])/.test(rest)) {
+      flushText(); i += 4
+      while (i < s.length && s[i] === ' ') i++
+      nodes.push(new MathIntegral({ children: latexToOmml(s.slice(i)) }))
+      i = s.length; continue
+    }
+
+    if (s[i] === '\\') {
+      // \mathbb{X}
+      const mbm = rest.match(/^\\mathbb\{([A-Z])\}/)
+      if (mbm) {
+        const MB = { R:'ℝ', N:'ℕ', Z:'ℤ', Q:'ℚ', C:'ℂ' }
+        textBuf += MB[mbm[1]] ?? mbm[1]; i += mbm[0].length; continue
+      }
+      // Symboles connus
+      let matched = false
+      for (const [cmd, sym] of Object.entries(OMML_SYM)) {
+        if (rest.startsWith(cmd) && !/[a-zA-Z]/.test(rest[cmd.length] ?? '')) {
+          textBuf += sym; i += cmd.length; matched = true; break
+        }
+      }
+      if (matched) continue
+      const m = rest.match(/^\\([a-zA-Z]+)/)
+      if (m) i += m[0].length; else i++
+      continue
+    }
+
+    // Exposant ^
+    if (s[i] === '^') {
+      i++
+      const exp = readBraceGroup(s, i); i = exp.end
+      nodes.push(new MathSuperScript({ children: [popAtom()], superScript: latexToOmml(exp.content) }))
+      continue
+    }
+
+    // Indice _
+    if (s[i] === '_') {
+      i++
+      const sub = readBraceGroup(s, i); i = sub.end
+      nodes.push(new MathSubScript({ children: [popAtom()], subScript: latexToOmml(sub.content) }))
+      continue
+    }
+
+    // {groupe}
+    if (s[i] === '{') {
+      flushText()
+      const g = readBraceGroup(s, i); i = g.end
+      nodes.push(...latexToOmml(g.content)); continue
+    }
+    if (s[i] === '}') { i++; continue }
+
+    textBuf += s[i++]
+  }
+  flushText()
+  return nodes.length ? nodes : [new MathRun(s)]
+}
+
+function renderMathLineOmml(line) {
+  const parts = line.split(/(\$[^$\n]+\$)/g)
+  return parts.flatMap(part => {
+    if (/^\$[^$]+\$$/.test(part)) {
+      try {
+        return [new DocxMath({ children: latexToOmml(part.slice(1, -1)) })]
+      } catch {
+        return [new TextRun({ text: part.slice(1, -1) })]
+      }
+    }
+    return part ? [new TextRun({ text: part })] : []
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Expand $\frac{A}{B}$ → 3 lines : A / ─────── / B
  * Applied before parseMathText so fractionParagraphs() can render them.
@@ -241,7 +429,7 @@ function fractionParagraphs(num, den, keepNextAfter = false) {
   return [
     new Paragraph({
       alignment: 'center',
-      children: renderMathLine(num),
+      children: renderMathLineOmml(num),
       spacing: { after: 0, before: 80 },
       keepLines: true,
       keepNext: true,   // numérateur toujours collé à la barre
@@ -254,7 +442,7 @@ function fractionParagraphs(num, den, keepNextAfter = false) {
     }),
     new Paragraph({
       alignment: 'center',
-      children: renderMathLine(den),
+      children: renderMathLineOmml(den),
       spacing: { after: 100, before: 0 },
       keepNext: keepNextAfter,  // le dénominateur reste avec la suite si le bloc continue
     }),
@@ -334,13 +522,13 @@ function parseMathText(text) {
 
     if (isTitle) {
       paragraphs.push(new Paragraph({
-        children: renderMathLine(display.replace(/^#+\s*/, '')),
+        children: renderMathLineOmml(display.replace(/^#+\s*/, '')),
         spacing: { before: 200, after: 60 },
         keepNext: true,
       }))
     } else {
       paragraphs.push(new Paragraph({
-        children: renderMathLine(display),
+        children: renderMathLineOmml(display),
         spacing: { after: 100, line: 360, lineRule: 'auto' },
         keepLines: true,
         keepNext: stays,
@@ -387,7 +575,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(expandAllFractions(auTexte)),
+        ...parseMathText(auTexte),
         spacer(),
       ],
     }],
@@ -424,11 +612,11 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(expandAllFractions(auTexte)),
+        ...parseMathText(auTexte),
         spacer(),
         new Paragraph({ text: '', pageBreakBefore: true }),
         sectionTitle(`Conseils spécifiques — ${profilLabel}`),
-        ...parseMathText(expandAllFractions(conseilsTexte)),
+        ...parseMathText(conseilsTexte),
         spacer(),
       ],
     }],
