@@ -135,7 +135,8 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
    ∫xⁿ dx = xⁿ⁺¹/(n+1) + C (n ≠ −1) · ∫(1/x)dx = ln|x| + C · ∫eˣ dx = eˣ + C
    ∫sin x dx = −cos x + C · ∫cos x dx = sin x + C · ∫tan x dx = −ln|cos x| + C
    ∫(1/(1+x²))dx = arctan x + C · ∫(u'·f(u))dx = F(u) + C (substitution)
-   Pour la dérivation : f'(u·v) = u'v + uv' · f'(u/v) = (u'v − uv')/v²
+   Pour la dérivation (si le document en contient) : f'(u·v) = u'v + uv' · f'(u/v) = (u'v − uv')/v²
+   INTERDIT : inclure des formules de dérivation dans le RAPPEL d'un document qui ne contient que des intégrales.
 
 6. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
    Les tokens «MATH_N» représentent des équations protégées. NE JAMAIS les modifier, les déplacer, les supprimer, ni les reformuler.
@@ -155,7 +156,9 @@ NOTATION MATHÉMATIQUE DANS L'AU :
 RÈGLES GÉNÉRALES :
 - Produire UNE SEULE version : le document avec AU intégrés — PAS l'original suivi de l'AU.
 - Ne jamais reproduire la liste des exercices en résumé ou en tête de document.
-- Commencer par la section Méthode — Étapes (page 1, règle 4), puis les exercices avec leurs AU.
+- Si [MÉTHODE FIXE] figure dans le message utilisateur : l'insérer VERBATIM en tête du document, avant le premier exercice — sans modifier un seul mot, sans ajouter d'étapes, sans changer le titre. Ne pas générer d'autre section Méthode.
+- Sinon : générer la section Méthode selon la règle 4.
+- Ne jamais reproduire dans le corps le titre du document, la classe, le niveau ou le type d'enseignement — ces données figurent déjà dans le tableau d'en-tête.
 - Conserver tous les énoncés originaux tels quels (les intégrer dans la structure AU).
 - Aucun commentaire ni introduction.
 - Guillemets français : « mot » — jamais " ou "
@@ -203,7 +206,10 @@ ${ANTI_CLAUDISATION}`
 
 function buildUserMessage(action, context) {
   if (action === 'appliquer_au_math') {
-    return `Document mathématique original (les tokens «MATH_N» sont des équations protégées) :
+    const methodeFixe = context.methodeTemplate
+      ? `[MÉTHODE FIXE — copier verbatim en tête du document, avant le premier exercice]\n${context.methodeTemplate}\n[FIN MÉTHODE FIXE]\n\n`
+      : ''
+    return `${methodeFixe}Document mathématique original (les tokens «MATH_N» sont des équations protégées) :
 """
 ${context.activite ?? 'Non fourni'}
 """

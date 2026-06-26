@@ -6,6 +6,7 @@ import { extractDocxMath } from '../lib/extractDocxMath'
 import { extractFile } from '../lib/extractFile'
 import { protectMath, restoreMath } from '../lib/mathProtect'
 import { exportAuMathDocx, exportProfilMathDocx } from '../lib/exportMathDocx'
+import { buildMethodeTemplate } from '../lib/methodeTemplates'
 import MathDisplay from '../components/MathDisplay'
 
 export default function MathAdapter() {
@@ -31,6 +32,7 @@ export default function MathAdapter() {
   const [error, setError]               = useState('')
 
   const [includeRappel, setIncludeRappel]   = useState(true)
+  const [useMethodeFixed, setUseMethodeFixed] = useState(true)
   const [exporting, setExporting]           = useState(false)
   const [exportingProfil, setExportingProfil] = useState('')
   const [saved, setSaved]               = useState(false)
@@ -91,7 +93,10 @@ export default function MathAdapter() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'appliquer_au_math',
-          context: { activite: activiteProtected, objectif, niveau, type_enseignement: typeEns, chapitre },
+          context: {
+            activite: activiteProtected, objectif, niveau, type_enseignement: typeEns, chapitre,
+            methodeTemplate: useMethodeFixed ? (buildMethodeTemplate(chapitre) ?? null) : null,
+          },
         }),
       })
       const data = await res.json()
@@ -211,6 +216,24 @@ export default function MathAdapter() {
               placeholder="Équations du 2e degré" />
           </div>
         </div>
+
+        {buildMethodeTemplate(chapitre) && (
+          <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3">
+            <label className="flex items-start gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={useMethodeFixed} onChange={e => setUseMethodeFixed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-teal-600" />
+              <div>
+                <span className="text-sm font-medium text-teal-800">Section Méthode garantie</span>
+                <span className="text-xs text-teal-600 ml-2">contenu fixe — non généré par l'IA</span>
+              </div>
+            </label>
+            {useMethodeFixed && (
+              <pre className="mt-2 text-xs text-teal-700 whitespace-pre-wrap leading-relaxed pl-6">
+                {buildMethodeTemplate(chapitre)}
+              </pre>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 2. Import document */}
