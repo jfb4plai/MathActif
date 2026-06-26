@@ -34,6 +34,8 @@ export default function MathAdapter() {
 
   const [includeRappel, setIncludeRappel]   = useState(true)
   const [useMethodeFixed, setUseMethodeFixed] = useState(true)
+  const [methodeEdit, setMethodeEdit]       = useState(null)
+  const [nbLignesZdt, setNbLignesZdt]       = useState(3)
   const [exporting, setExporting]           = useState(false)
   const [exportingProfil, setExportingProfil] = useState('')
   const [saved, setSaved]               = useState(false)
@@ -96,6 +98,7 @@ export default function MathAdapter() {
           action: 'appliquer_au_math',
           context: {
             activite: activiteProtected, objectif, niveau, type_enseignement: typeEns, chapitre,
+            nb_lignes_zdt: nbLignesZdt,
           },
         }),
       })
@@ -163,7 +166,7 @@ export default function MathAdapter() {
   async function exporterAU() {
     if (!auTexte) return
     setExporting(true)
-    const methodeTemplate = useMethodeFixed ? (buildMethodeTemplate(chapitre) ?? null) : null
+    const methodeTemplate = useMethodeFixed ? methodeEdit : null
     await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns, includeRappel, methodeTemplate })
     setExporting(false)
   }
@@ -172,7 +175,7 @@ export default function MathAdapter() {
     if (!auTexte) { setError("Génère d'abord le document AU avant d'exporter une version profil."); return }
     setExportingProfil(profil)
     const showAr = arMode && ['dyslexie', 'dyspraxie', 'dyscalculie'].includes(profil)
-    const methodeTemplate = useMethodeFixed ? (buildMethodeTemplate(chapitre) ?? null) : null
+    const methodeTemplate = useMethodeFixed ? methodeEdit : null
     await exportProfilMathDocx({
       profil, auTexte, conseilsTexte: texteFinal,
       chapitre, niveau, typeEnseignement: typeEns, arMode: showAr, includeRappel, methodeTemplate,
@@ -223,9 +226,11 @@ export default function MathAdapter() {
                 if (e.target.value === 'autre') {
                   setChapitreMode('autre')
                   setChapitre('')
+                  setMethodeEdit(null)
                 } else {
                   setChapitreMode('select')
                   setChapitre(e.target.value)
+                  setMethodeEdit(buildMethodeTemplate(e.target.value))
                 }
               }}
             >
@@ -251,20 +256,26 @@ export default function MathAdapter() {
             Chapitres supportés : intégration, dérivation, 2e degré, trigonométrie, limites, vecteurs.
           </div>
         )}
-        {buildMethodeTemplate(chapitre) && (
+        {methodeEdit !== null && (
           <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3">
             <label className="flex items-start gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={useMethodeFixed} onChange={e => setUseMethodeFixed(e.target.checked)}
                 className="mt-0.5 w-4 h-4 accent-teal-600" />
               <div>
-                <span className="text-sm font-medium text-teal-800">Section Méthode garantie</span>
-                <span className="text-xs text-teal-600 ml-2">contenu fixe — non généré par l'IA</span>
+                <span className="text-sm font-medium text-teal-800">Section Méthode — vos 20%</span>
+                <span className="text-xs text-teal-600 ml-2">base proposée — modifiez selon votre contexte classe</span>
               </div>
             </label>
             {useMethodeFixed && (
-              <pre className="mt-2 text-xs text-teal-700 whitespace-pre-wrap leading-relaxed pl-6">
-                {buildMethodeTemplate(chapitre)}
-              </pre>
+              <div className="mt-2 pl-6">
+                <p className="text-xs text-teal-500 mb-1">Adaptez les étapes, le vocabulaire, les remarques — le texte final est le vôtre.</p>
+                <textarea
+                  className="w-full text-xs text-teal-800 bg-white border border-teal-200 rounded-lg p-2 leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  rows={8}
+                  value={methodeEdit}
+                  onChange={e => setMethodeEdit(e.target.value)}
+                />
+              </div>
             )}
           </div>
         )}
@@ -335,10 +346,21 @@ export default function MathAdapter() {
                 Fondé sur la recherche RISS — Numérotation, même plan, zone de travail, formule de rappel (Rusconi 2025 · Alvarez 2024 · Mahi Haddad &amp; Beaud 2025)
               </p>
             </div>
-            <button onClick={genererAU} disabled={generatingAu}
-              className="btn-secondary text-sm whitespace-nowrap">
-              {generatingAu ? 'Génération…' : auTexte ? 'Regénérer AU' : 'Générer document AU'}
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 whitespace-nowrap">Lignes par exercice</label>
+                <input
+                  type="number" min={2} max={12}
+                  value={nbLignesZdt}
+                  onChange={e => setNbLignesZdt(Math.max(2, Math.min(12, parseInt(e.target.value) || 3)))}
+                  className="input w-16 text-center text-sm py-1"
+                />
+              </div>
+              <button onClick={genererAU} disabled={generatingAu}
+                className="btn-secondary text-sm whitespace-nowrap">
+                {generatingAu ? 'Génération…' : auTexte ? 'Regénérer AU' : 'Générer document AU'}
+              </button>
+            </div>
           </div>
 
           {auTexte && (
@@ -346,13 +368,13 @@ export default function MathAdapter() {
               <div className="bg-white rounded-xl p-4 text-sm text-gray-700 border border-gray-200 max-h-56 overflow-y-auto">
                 <MathDisplay text={auTexte} />
               </div>
-              {(useMethodeFixed && buildMethodeTemplate(chapitre)) || includeRappel ? (
+              {(useMethodeFixed && methodeEdit) || (includeRappel && methodeEdit) ? (
                 <div className="rounded-lg bg-teal-50 border border-teal-100 px-3 py-2 text-xs text-teal-700 space-y-0.5">
-                  <p className="font-medium">Contenu ajouté automatiquement en tête du .docx (non visible ici) :</p>
-                  {useMethodeFixed && buildMethodeTemplate(chapitre) && (
-                    <p>· Section Méthode — {buildMethodeTemplate(chapitre).split('\n')[0]}</p>
+                  <p className="font-medium">Ajouté en tête du .docx (non visible dans l'aperçu) :</p>
+                  {useMethodeFixed && methodeEdit && (
+                    <p>· {methodeEdit.split('\n')[0]}</p>
                   )}
-                  {includeRappel && buildMethodeTemplate(chapitre) && (
+                  {includeRappel && methodeEdit && (
                     <p>· Formules de rappel pour ce chapitre</p>
                   )}
                 </div>
