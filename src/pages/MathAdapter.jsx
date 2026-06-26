@@ -21,6 +21,7 @@ export default function MathAdapter() {
   const [niveau, setNiveau]             = useState('')
   const [typeEns, setTypeEns]           = useState('')
   const [chapitre, setChapitre]         = useState('')
+  const [chapitreMode, setChapitreMode] = useState('select')
   const [objectif, setObjectif]         = useState('')
   const [profilsChoisis, setProfilsChoisis] = useState([])
 
@@ -211,10 +212,36 @@ export default function MathAdapter() {
             </select>
           </div>
           <div>
-            <label className="label">Chapitre</label>
-            <p className="text-xs text-gray-400 mb-1">Ex : Équations du 2e degré</p>
-            <input className="input" value={chapitre} onChange={e => setChapitre(e.target.value)}
-              placeholder="Équations du 2e degré" />
+            <label className="label">
+              Chapitre <span className="text-teal-600 font-normal text-xs ml-1">— active Méthode + RAPPEL</span>
+            </label>
+            <p className="text-xs text-gray-400 mb-1">Détermine la section Méthode et les formules de rappel dans le .docx</p>
+            <select
+              className={`input ${!chapitre ? 'border-teal-400 ring-1 ring-teal-300' : ''}`}
+              value={chapitreMode === 'autre' ? 'autre' : chapitre}
+              onChange={e => {
+                if (e.target.value === 'autre') {
+                  setChapitreMode('autre')
+                  setChapitre('')
+                } else {
+                  setChapitreMode('select')
+                  setChapitre(e.target.value)
+                }
+              }}
+            >
+              <option value="">Choisir le chapitre…</option>
+              <option value="Calcul de primitives">Intégration — Calcul de primitives</option>
+              <option value="Dérivation">Dérivation</option>
+              <option value="Équations du 2e degré">Équations du 2e degré</option>
+              <option value="Trigonométrie">Trigonométrie</option>
+              <option value="Calcul de limites">Calcul de limites</option>
+              <option value="Vecteurs">Vecteurs</option>
+              <option value="autre">Autre (saisir manuellement)</option>
+            </select>
+            {chapitreMode === 'autre' && (
+              <input className="input mt-2" value={chapitre} onChange={e => setChapitre(e.target.value)}
+                placeholder="Ex : Suites arithmétiques" autoFocus />
+            )}
           </div>
         </div>
 
