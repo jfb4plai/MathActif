@@ -465,15 +465,18 @@ function blockContinues(lines, i) {
  * entre l'énoncé et la zone de travail.
  */
 function hasAuContentAhead(lines, i) {
-  let blanks = 0
-  for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
+  let blanks = 0, nonBlanks = 0
+  for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
     const t = lines[j].trim()
     if (!t) {
       blanks++
       if (blanks > 2) return false
       continue
     }
-    return /^(Zone de travail|Données\s*:|Inconnue|_{5,})/i.test(t)
+    blanks = 0
+    if (/^(Zone de travail|Données\s*:|Inconnue|_{5,})/i.test(t)) return true
+    // Traverse une ligne intermédiaire (ex: "**2.** $\int...$") avant de trouver ZDT
+    if (++nonBlanks >= 2) return false
   }
   return false
 }
@@ -514,9 +517,9 @@ function parseMathText(text) {
     }
     if (isFractionBar(trimmed)) { i++; continue }
 
-    // Strip markdown bold markers (**...**) produits par Haiku
-    const display = trimmed.replace(/^\*\*(.+)\*\*$/, '$1')
-    const isTitle = /^(Exercice|Étape|Section|RAPPEL|##|AE|AU)\s/.test(display)
+    // Strip marqueurs markdown produits par Haiku : **gras** partout + # en tête
+    const display = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/^#+\s*/, '')
+    const isTitle = /^(Exercice|Étape|Section|RAPPEL|AE|AU)\s/.test(display)
     // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
     const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
 
