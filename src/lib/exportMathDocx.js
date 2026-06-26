@@ -479,7 +479,7 @@ function hasAuContentAhead(lines, i) {
   return false
 }
 
-function parseMathText(text) {
+function parseMathText(text, { includeRappel = true } = {}) {
   if (!text) return [new Paragraph({ text: '—' })]
   const lines = text.split('\n')
   const paragraphs = []
@@ -533,7 +533,10 @@ function parseMathText(text) {
       continue
     }
 
-    const isTitle = /^(Exercice|Étape|Section|RAPPEL|AE|AU)\s/.test(display)
+    // Filtre RAPPEL optionnel : sauter la ligne si l'enseignant l'a désactivé
+    if (!includeRappel && /^\[?RAPPEL/i.test(display)) { i++; continue }
+
+    const isTitle = /^(Exercice|Étape|Méthode|Section|RAPPEL|AE|AU)\s/.test(display)
     // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
     const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
 
@@ -568,7 +571,7 @@ function makeHeader(subtitle, date) {
   })
 }
 
-export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement }) {
+export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement, includeRappel = true }) {
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
   const niveauL = NIVEAUX.find(n => n.value === niveau)?.label ?? niveau ?? ''
   const typeL   = TYPES_ENSEIGNEMENT.find(t => t.value === typeEnseignement)?.label ?? typeEnseignement ?? ''
@@ -592,7 +595,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(auTexte),
+        ...parseMathText(auTexte, { includeRappel }),
         spacer(),
       ],
     }],
@@ -602,7 +605,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
   saveAs(blob, `MathActif_AU_${(chapitre || 'cours').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`)
 }
 
-export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, chapitre, niveau, typeEnseignement, arMode = false }) {
+export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, chapitre, niveau, typeEnseignement, arMode = false, includeRappel = true }) {
   const profilDef   = PROFILS.find(p => p.value === profil)
   const profilLabel = profilDef?.label ?? profil
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -629,7 +632,7 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...parseMathText(auTexte),
+        ...parseMathText(auTexte, { includeRappel }),
         spacer(),
         new Paragraph({ text: '', pageBreakBefore: true }),
         sectionTitle(`Conseils spécifiques — ${profilLabel}`),

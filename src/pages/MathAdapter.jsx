@@ -30,6 +30,7 @@ export default function MathAdapter() {
   const [texteFinal, setTexteFinal]     = useState('')
   const [error, setError]               = useState('')
 
+  const [includeRappel, setIncludeRappel]   = useState(true)
   const [exporting, setExporting]           = useState(false)
   const [exportingProfil, setExportingProfil] = useState('')
   const [saved, setSaved]               = useState(false)
@@ -157,7 +158,7 @@ export default function MathAdapter() {
   async function exporterAU() {
     if (!auTexte) return
     setExporting(true)
-    await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns })
+    await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns, includeRappel })
     setExporting(false)
   }
 
@@ -167,7 +168,7 @@ export default function MathAdapter() {
     const showAr = arMode && ['dyslexie', 'dyspraxie', 'dyscalculie'].includes(profil)
     await exportProfilMathDocx({
       profil, auTexte, conseilsTexte: texteFinal,
-      chapitre, niveau, typeEnseignement: typeEns, arMode: showAr,
+      chapitre, niveau, typeEnseignement: typeEns, arMode: showAr, includeRappel,
     })
     setExportingProfil('')
   }
@@ -288,6 +289,15 @@ export default function MathAdapter() {
               <div className="bg-white rounded-xl p-4 text-sm text-gray-700 border border-gray-200 max-h-56 overflow-y-auto">
                 <MathDisplay text={auTexte} />
               </div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeRappel}
+                  onChange={e => setIncludeRappel(e.target.checked)}
+                  className="w-4 h-4 accent-teal-600"
+                />
+                Inclure les formules de rappel dans le .docx
+              </label>
               <button onClick={exporterAU} disabled={exporting} className="btn-primary text-sm">
                 {exporting ? 'Export…' : '⬇ Exporter AU universel (.docx)'}
               </button>

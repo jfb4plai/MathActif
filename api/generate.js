@@ -101,12 +101,23 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
    _______________________________________________
    (exactement 3 lignes — ni plus, ni moins)
 
-4. DÉCOMPOSITION PROCÉDURALE : uniquement si l'exercice a des étapes distinctes non évidentes.
-   Pour les exercices de dérivation standard (u/v), ne pas décomposer — la formule de rappel suffit.
-   Si décomposition utile : Étape 1 : … / Étape 2 : … (max 3 étapes, sans zone de travail par étape).
+4. MÉTHODE — ÉTAPES (section sur la première page, avant le premier exercice) :
+   Insérer une section décrivant la procédure générale déduite du type d'exercices du document.
+   Format OBLIGATOIRE :
+   Méthode — [type de calcul identifié, ex : Calcul d'intégrales par substitution]
+   Étape 1 : [action concrète]
+   Étape 2 : [action]
+   Étape 3 : [action]
+   (4 à 6 étapes max — globales au chapitre, pas spécifiques à un exercice)
+   Ne pas insérer de [saut_de_page] après cette section — elle reste sur la même page que les premiers exercices.
 
-5. FORMULE DE RAPPEL : si le nom d'une formule est mentionné (Pythagore, discriminant, dérivée, quotient, sin/cos/tan, Thalès, etc.), l'insérer en encadré [RAPPEL : …] juste avant l'exercice concerné.
-   Les valeurs u'(x) et v'(x) dans les Données sont fournies par l'AU — indiquer [fourni] après chacune.
+5. FORMULE DE RAPPEL : insérer [RAPPEL : formule] juste avant l'exercice qui l'utilise pour la première fois.
+   Ne pas répéter le même RAPPEL pour chaque exercice — une seule fois par type de formule.
+   Formules d'intégration à utiliser si pertinentes :
+   ∫xⁿ dx = xⁿ⁺¹/(n+1) + C (n ≠ −1) · ∫(1/x)dx = ln|x| + C · ∫eˣ dx = eˣ + C
+   ∫sin x dx = −cos x + C · ∫cos x dx = sin x + C · ∫tan x dx = −ln|cos x| + C
+   ∫(1/(1+x²))dx = arctan x + C · ∫(u'·f(u))dx = F(u) + C (substitution)
+   Pour la dérivation : f'(u·v) = u'v + uv' · f'(u/v) = (u'v − uv')/v²
 
 6. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
    Les tokens «MATH_N» représentent des équations protégées. NE JAMAIS les modifier, les déplacer, les supprimer, ni les reformuler.
@@ -126,7 +137,7 @@ NOTATION MATHÉMATIQUE DANS L'AU :
 RÈGLES GÉNÉRALES :
 - Produire UNE SEULE version : le document avec AU intégrés — PAS l'original suivi de l'AU.
 - Ne jamais reproduire la liste des exercices en résumé ou en tête de document.
-- Commencer directement par le premier exercice avec ses AU.
+- Commencer par la section Méthode — Étapes (page 1, règle 4), puis les exercices avec leurs AU.
 - Conserver tous les énoncés originaux tels quels (les intégrer dans la structure AU).
 - Aucun commentaire ni introduction.
 - Guillemets français : « mot » — jamais " ou "
