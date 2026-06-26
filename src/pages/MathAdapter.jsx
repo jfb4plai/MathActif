@@ -218,6 +218,12 @@ export default function MathAdapter() {
           </div>
         </div>
 
+        {chapitre.trim() && !buildMethodeTemplate(chapitre) && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+            Chapitre non reconnu — aucune section Méthode ne sera insérée dans le .docx.
+            Chapitres supportés : intégration, dérivation, 2e degré, trigonométrie, limites, vecteurs.
+          </div>
+        )}
         {buildMethodeTemplate(chapitre) && (
           <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3">
             <label className="flex items-start gap-2 cursor-pointer select-none">
@@ -313,6 +319,17 @@ export default function MathAdapter() {
               <div className="bg-white rounded-xl p-4 text-sm text-gray-700 border border-gray-200 max-h-56 overflow-y-auto">
                 <MathDisplay text={auTexte} />
               </div>
+              {(useMethodeFixed && buildMethodeTemplate(chapitre)) || includeRappel ? (
+                <div className="rounded-lg bg-teal-50 border border-teal-100 px-3 py-2 text-xs text-teal-700 space-y-0.5">
+                  <p className="font-medium">Contenu ajouté automatiquement en tête du .docx (non visible ici) :</p>
+                  {useMethodeFixed && buildMethodeTemplate(chapitre) && (
+                    <p>· Section Méthode — {buildMethodeTemplate(chapitre).split('\n')[0]}</p>
+                  )}
+                  {includeRappel && buildMethodeTemplate(chapitre) && (
+                    <p>· Formules de rappel pour ce chapitre</p>
+                  )}
+                </div>
+              ) : null}
               <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
                 <input
                   type="checkbox"
