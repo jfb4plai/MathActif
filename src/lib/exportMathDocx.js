@@ -600,63 +600,14 @@ function parseMathText(text, { includeRappel = true } = {}) {
   return paragraphs
 }
 
-const RAPPEL_STATIQUE = {
-  integr: [
-    '[RAPPEL : ∫xⁿ dx = xⁿ⁺¹/(n+1) + C  (n ≠ −1)]',
-    '[RAPPEL : ∫(1/x) dx = ln|x| + C]',
-    '[RAPPEL : ∫eˣ dx = eˣ + C]',
-    '[RAPPEL : ∫sin x dx = −cos x + C]',
-    '[RAPPEL : ∫cos x dx = sin x + C]',
-    '[RAPPEL : ∫(u\'·f(u)) dx = F(u) + C  (substitution)]',
-  ],
-  derivat: [
-    '[RAPPEL : (u·v)\' = u\'v + uv\']',
-    '[RAPPEL : (u/v)\' = (u\'v − uv\') / v²]',
-    '[RAPPEL : (f∘g)\'(x) = f\'(g(x))·g\'(x)]',
-  ],
-  degree2: [
-    '[RAPPEL : Δ = b² − 4ac]',
-    '[RAPPEL : si Δ > 0 → x = (−b ± √Δ) / 2a]',
-    '[RAPPEL : si Δ = 0 → x = −b / 2a]',
-    '[RAPPEL : si Δ < 0 → aucune solution réelle]',
-  ],
-  trigo: [
-    '[RAPPEL : sin²x + cos²x = 1]',
-    '[RAPPEL : tan x = sin x / cos x]',
-    '[RAPPEL : solutions de sin x = a → x = arcsin a + 2kπ ou x = π − arcsin a + 2kπ]',
-    '[RAPPEL : solutions de cos x = a → x = ±arccos a + 2kπ]',
-  ],
-  limite: [
-    '[RAPPEL : forme 0/0 ou ∞/∞ → factoriser ou conjuguer pour lever l\'indétermination]',
-    '[RAPPEL : lim xⁿ = ±∞ quand x → ±∞ (selon parité de n)]',
-  ],
-  vecteur: [
-    '[RAPPEL : u⃗·v⃗ = x₁x₂ + y₁y₂  (produit scalaire)]',
-    '[RAPPEL : ‖u⃗‖ = √(x² + y²)  (norme)]',
-    '[RAPPEL : u⃗ ⊥ v⃗ ⟺ u⃗·v⃗ = 0]',
-  ],
-}
-
-function detectChapitreKey(chapitre) {
-  const ch = (chapitre || '').toLowerCase()
-  if (/intégr|primitiv/.test(ch)) return 'integr'
-  if (/dérivat|dériver/.test(ch)) return 'derivat'
-  if (/2e degré|trinôme|discriminant/.test(ch)) return 'degree2'
-  if (/trigo|sinus|cosinus|tangente/.test(ch)) return 'trigo'
-  if (/limit/.test(ch)) return 'limite'
-  if (/vecteur|scalaire/.test(ch)) return 'vecteur'
-  return null
-}
-
-function buildPreambleParagraphs(methodeTemplate, chapitre, includeRappel) {
+function buildPreambleParagraphs(methodeTemplate, selectedRappelLines) {
   const paragraphs = []
   if (methodeTemplate) {
     paragraphs.push(...parseMathText(methodeTemplate))
     paragraphs.push(spacer())
   }
-  const chapitreKey = detectChapitreKey(chapitre)
-  if (includeRappel && chapitreKey && RAPPEL_STATIQUE[chapitreKey]) {
-    const rappelText = RAPPEL_STATIQUE[chapitreKey].join('\n')
+  if (selectedRappelLines?.length) {
+    const rappelText = selectedRappelLines.join('\n')
     paragraphs.push(...parseMathText(rappelText, { includeRappel: true }))
     paragraphs.push(spacer())
   }
@@ -675,7 +626,7 @@ function makeHeader(subtitle, date) {
   })
 }
 
-export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement, includeRappel = true, methodeTemplate = null }) {
+export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement, selectedRappelLines = null, methodeTemplate = null }) {
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
   const niveauL = NIVEAUX.find(n => n.value === niveau)?.label ?? niveau ?? ''
   const typeL   = TYPES_ENSEIGNEMENT.find(t => t.value === typeEnseignement)?.label ?? typeEnseignement ?? ''
@@ -699,8 +650,8 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...buildPreambleParagraphs(methodeTemplate, chapitre, includeRappel),
-        ...parseMathText(auTexte, { includeRappel }),
+        ...buildPreambleParagraphs(methodeTemplate, selectedRappelLines),
+        ...parseMathText(auTexte),
         spacer(),
       ],
     }],
@@ -710,7 +661,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
   saveAs(blob, `MathActif_AU_${(chapitre || 'cours').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`)
 }
 
-export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, chapitre, niveau, typeEnseignement, arMode = false, includeRappel = true, methodeTemplate = null }) {
+export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, chapitre, niveau, typeEnseignement, arMode = false, selectedRappelLines = null, methodeTemplate = null }) {
   const profilDef   = PROFILS.find(p => p.value === profil)
   const profilLabel = profilDef?.label ?? profil
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -737,8 +688,8 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
-        ...buildPreambleParagraphs(methodeTemplate, chapitre, includeRappel),
-        ...parseMathText(auTexte, { includeRappel }),
+        ...buildPreambleParagraphs(methodeTemplate, selectedRappelLines),
+        ...parseMathText(auTexte),
         spacer(),
         new Paragraph({ text: '', pageBreakBefore: true }),
         sectionTitle(`Conseils spécifiques — ${profilLabel}`),

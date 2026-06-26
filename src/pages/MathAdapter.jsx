@@ -7,6 +7,7 @@ import { extractFile } from '../lib/extractFile'
 import { protectMath, restoreMath } from '../lib/mathProtect'
 import { exportAuMathDocx, exportProfilMathDocx } from '../lib/exportMathDocx'
 import { buildMethodeTemplate } from '../lib/methodeTemplates'
+import { RAPPEL_STATIQUE, detectChapitreKey } from '../lib/rappelData'
 import MathDisplay from '../components/MathDisplay'
 
 export default function MathAdapter() {
@@ -32,15 +33,30 @@ export default function MathAdapter() {
   const [texteFinal, setTexteFinal]     = useState('')
   const [error, setError]               = useState('')
 
-  const [includeRappel, setIncludeRappel]   = useState(true)
   const [useMethodeFixed, setUseMethodeFixed] = useState(true)
-  const [methodeEdit, setMethodeEdit]       = useState(null)
-  const [nbLignesZdt, setNbLignesZdt]       = useState(3)
-  const [exporting, setExporting]           = useState(false)
+  const [methodeEdit, setMethodeEdit]         = useState(null)
+  const [nbLignesZdt, setNbLignesZdt]         = useState(3)
+  const [nbLignesAtLastGen, setNbLignesAtLastGen] = useState(null)
+  const [includeRappel, setIncludeRappel]     = useState(true)
+  const [rappelSelected, setRappelSelected]   = useState(null)
+  const [exporting, setExporting]             = useState(false)
   const [exportingProfil, setExportingProfil] = useState('')
   const [saved, setSaved]               = useState(false)
   const [saving, setSaving]             = useState(false)
   const [arMode, setArMode]             = useState(false)
+
+  function initChapitreState(val) {
+    setMethodeEdit(buildMethodeTemplate(val))
+    const key = detectChapitreKey(val)
+    setRappelSelected(key ? RAPPEL_STATIQUE[key].map(() => true) : null)
+  }
+
+  function getSelectedRappelLines() {
+    if (!includeRappel || !rappelSelected) return null
+    const key = detectChapitreKey(chapitre)
+    if (!key) return null
+    return RAPPEL_STATIQUE[key].filter((_, i) => rappelSelected[i])
+  }
 
   async function handleFile(file) {
     if (!file) return
@@ -105,6 +121,7 @@ export default function MathAdapter() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Erreur serveur')
       setAuTexte(restoreMath(data.text, map))
+      setNbLignesAtLastGen(nbLignesZdt)
     } catch (err) {
       setError(err.message)
     }
@@ -167,7 +184,8 @@ export default function MathAdapter() {
     if (!auTexte) return
     setExporting(true)
     const methodeTemplate = useMethodeFixed ? methodeEdit : null
-    await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns, includeRappel, methodeTemplate })
+    const selectedRappelLines = getSelectedRappelLines()
+    await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns, selectedRappelLines, methodeTemplate })
     setExporting(false)
   }
 
@@ -176,14 +194,21 @@ export default function MathAdapter() {
     setExportingProfil(profil)
     const showAr = arMode && ['dyslexie', 'dyspraxie', 'dyscalculie'].includes(profil)
     const methodeTemplate = useMethodeFixed ? methodeEdit : null
-    await exportProfilMathDocx({
-      profil, auTexte, conseilsTexte: texteFinal,
-      chapitre, niveau, typeEnseignement: typeEns, arMode: showAr, includeRappel, methodeTemplate,
-    })
-    setExportingProfil('')
+    const selectedRappelLines = getSelectedRappelLines()
+    try {
+      await exportProfilMathDocx({
+        profil, auTexte, conseilsTexte: texteFinal,
+        chapitre, niveau, typeEnseignement: typeEns, arMode: showAr, selectedRappelLines, methodeTemplate,
+      })
+    } finally {
+      setExportingProfil('')
+    }
   }
 
+  const zdtDirty = auTexte && nbLignesAtLastGen !== null && nbLignesZdt !== nbLignesAtLastGen
   const canGenerate = activite.trim().length > 20 && profilsChoisis.length > 0
+  const chapitreKey = detectChapitreKey(chapitre)
+  const rappelFormulas = chapitreKey ? RAPPEL_STATIQUE[chapitreKey] : null
 
   return (
     <div className="space-y-6">
@@ -223,14 +248,17 @@ export default function MathAdapter() {
               className={`input ${!chapitre ? 'border-teal-400 ring-1 ring-teal-300' : ''}`}
               value={chapitreMode === 'autre' ? 'autre' : chapitre}
               onChange={e => {
-                if (e.target.value === 'autre') {
+                const val = e.target.value
+                if (val === '') return
+                if (val === 'autre') {
                   setChapitreMode('autre')
                   setChapitre('')
                   setMethodeEdit(null)
+                  setRappelSelected(null)
                 } else {
                   setChapitreMode('select')
-                  setChapitre(e.target.value)
-                  setMethodeEdit(buildMethodeTemplate(e.target.value))
+                  setChapitre(val)
+                  initChapitreState(val)
                 }
               }}
             >
@@ -244,18 +272,30 @@ export default function MathAdapter() {
               <option value="autre">Autre (saisir manuellement)</option>
             </select>
             {chapitreMode === 'autre' && (
-              <input className="input mt-2" value={chapitre} onChange={e => setChapitre(e.target.value)}
-                placeholder="Ex : Suites arithmétiques" autoFocus />
+              <input
+                className="input mt-2"
+                value={chapitre}
+                onChange={e => {
+                  const val = e.target.value
+                  setChapitre(val)
+                  initChapitreState(val)
+                }}
+                placeholder="Ex : Suites arithmétiques"
+                autoFocus
+              />
             )}
           </div>
         </div>
 
-        {chapitre.trim() && !buildMethodeTemplate(chapitre) && (
+        {/* Avertissement chapitre non reconnu */}
+        {chapitre.trim() && methodeEdit === null && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-            Chapitre non reconnu — aucune section Méthode ne sera insérée dans le .docx.
+            Chapitre non reconnu — aucune section Méthode ni formule de rappel ne seront insérées dans le .docx.
             Chapitres supportés : intégration, dérivation, 2e degré, trigonométrie, limites, vecteurs.
           </div>
         )}
+
+        {/* Méthode éditable */}
         {methodeEdit !== null && (
           <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3">
             <label className="flex items-start gap-2 cursor-pointer select-none">
@@ -270,7 +310,7 @@ export default function MathAdapter() {
               <div className="mt-2 pl-6">
                 <p className="text-xs text-teal-500 mb-1">Adaptez les étapes, le vocabulaire, les remarques — le texte final est le vôtre.</p>
                 <textarea
-                  className="w-full text-xs text-teal-800 bg-white border border-teal-200 rounded-lg p-2 leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  className="w-full text-sm text-teal-800 bg-white border border-teal-200 rounded-lg p-2 leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-teal-400"
                   rows={8}
                   value={methodeEdit}
                   onChange={e => setMethodeEdit(e.target.value)}
@@ -279,6 +319,25 @@ export default function MathAdapter() {
             )}
           </div>
         )}
+
+        {/* Lignes pour les zones de travail */}
+        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-800">Lignes pour les zones de travail</label>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Nombre de lignes vierges insérées après chaque exercice (2–12, défaut : 3).
+                La règle «énoncé + zone de travail sur la même page» est garantie quelle que soit la valeur.
+              </p>
+            </div>
+            <input
+              type="number" min={2} max={12}
+              value={nbLignesZdt}
+              onChange={e => setNbLignesZdt(Math.max(2, Math.min(12, parseInt(e.target.value) || 3)))}
+              className="input w-20 text-center text-sm py-1 flex-shrink-0"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 2. Import document */}
@@ -346,21 +405,10 @@ export default function MathAdapter() {
                 Fondé sur la recherche RISS — Numérotation, même plan, zone de travail, formule de rappel (Rusconi 2025 · Alvarez 2024 · Mahi Haddad &amp; Beaud 2025)
               </p>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-500 whitespace-nowrap">Lignes par exercice</label>
-                <input
-                  type="number" min={2} max={12}
-                  value={nbLignesZdt}
-                  onChange={e => setNbLignesZdt(Math.max(2, Math.min(12, parseInt(e.target.value) || 3)))}
-                  className="input w-16 text-center text-sm py-1"
-                />
-              </div>
-              <button onClick={genererAU} disabled={generatingAu}
-                className="btn-secondary text-sm whitespace-nowrap">
-                {generatingAu ? 'Génération…' : auTexte ? 'Regénérer AU' : 'Générer document AU'}
-              </button>
-            </div>
+            <button onClick={genererAU} disabled={generatingAu}
+              className="btn-secondary text-sm whitespace-nowrap">
+              {generatingAu ? 'Génération…' : auTexte ? 'Regénérer AU' : 'Générer document AU'}
+            </button>
           </div>
 
           {auTexte && (
@@ -368,26 +416,68 @@ export default function MathAdapter() {
               <div className="bg-white rounded-xl p-4 text-sm text-gray-700 border border-gray-200 max-h-56 overflow-y-auto">
                 <MathDisplay text={auTexte} />
               </div>
-              {(useMethodeFixed && methodeEdit) || (includeRappel && methodeEdit) ? (
+
+              {zdtDirty && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                  Le nombre de lignes a changé ({nbLignesAtLastGen} → {nbLignesZdt}). Cliquez sur «Regénérer AU» pour appliquer.
+                </div>
+              )}
+
+              {(useMethodeFixed && methodeEdit) || rappelFormulas ? (
                 <div className="rounded-lg bg-teal-50 border border-teal-100 px-3 py-2 text-xs text-teal-700 space-y-0.5">
                   <p className="font-medium">Ajouté en tête du .docx (non visible dans l'aperçu) :</p>
-                  {useMethodeFixed && methodeEdit && (
-                    <p>· {methodeEdit.split('\n')[0]}</p>
-                  )}
-                  {includeRappel && methodeEdit && (
-                    <p>· Formules de rappel pour ce chapitre</p>
+                  {useMethodeFixed && methodeEdit && <p>· {methodeEdit.split('\n')[0]}</p>}
+                  {rappelFormulas && (
+                    <p>· {rappelSelected?.filter(Boolean).length ?? rappelFormulas.length} formule(s) de rappel</p>
                   )}
                 </div>
               ) : null}
-              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={includeRappel}
-                  onChange={e => setIncludeRappel(e.target.checked)}
-                  className="w-4 h-4 accent-teal-600"
-                />
-                Inclure les formules de rappel dans le .docx
-              </label>
+
+              {/* Sélection des formules de rappel */}
+              <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={includeRappel}
+                    onChange={e => setIncludeRappel(e.target.checked)}
+                    className="w-4 h-4 accent-teal-600"
+                  />
+                  Inclure les formules de rappel dans le .docx
+                </label>
+
+                {includeRappel && rappelFormulas && (
+                  <div className="pl-6 space-y-1">
+                    <p className="text-xs text-gray-400 mb-2">
+                      L'élève choisit la bonne formule — décochez celles qui ne s'appliquent pas à ce document.
+                    </p>
+                    {rappelFormulas.map((formula, i) => {
+                      const display = formula.replace(/^\[RAPPEL : /, '').replace(/\]$/, '')
+                      return (
+                        <label key={i} className="flex items-start gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={rappelSelected?.[i] ?? true}
+                            onChange={e => setRappelSelected(prev => {
+                              const next = [...(prev ?? rappelFormulas.map(() => true))]
+                              next[i] = e.target.checked
+                              return next
+                            })}
+                            className="mt-0.5 w-3.5 h-3.5 accent-teal-600 flex-shrink-0"
+                          />
+                          <span className="text-xs text-gray-600 font-mono">{display}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {includeRappel && !rappelFormulas && (
+                  <p className="pl-6 text-xs text-gray-400">
+                    Sélectionnez un chapitre reconnu pour accéder aux formules de rappel.
+                  </p>
+                )}
+              </div>
+
               <button onClick={exporterAU} disabled={exporting} className="btn-primary text-sm">
                 {exporting ? 'Export…' : '⬇ Exporter AU universel (.docx)'}
               </button>

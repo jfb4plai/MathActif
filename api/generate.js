@@ -96,8 +96,8 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
    (NE JAMAIS écrire "…" ou "..." dans le document — toujours extraire la valeur réelle de l'énoncé)
    Inconnue(s) : f'(x)
    Zone de travail :
-${Array(context.nb_lignes_zdt ?? 3).fill('   _______________________________________________').join('\n')}
-   (exactement ${context.nb_lignes_zdt ?? 3} lignes — ni plus, ni moins)
+${Array(Math.max(2, Math.min(12, parseInt(context.nb_lignes_zdt) || 3))).fill('   _______________________________________________').join('\n')}
+   (exactement ${Math.max(2, Math.min(12, parseInt(context.nb_lignes_zdt) || 3))} lignes — ni plus, ni moins)
 
 4. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
    Les tokens «MATH_N» représentent des équations protégées. NE JAMAIS les modifier, les déplacer, les supprimer, ni les reformuler.
