@@ -600,6 +600,44 @@ function parseMathText(text, { includeRappel = true } = {}) {
   return paragraphs
 }
 
+const RAPPEL_STATIQUE = {
+  integr: [
+    '[RAPPEL : ∫xⁿ dx = xⁿ⁺¹/(n+1) + C  (n ≠ −1)]',
+    '[RAPPEL : ∫(1/x) dx = ln|x| + C]',
+    '[RAPPEL : ∫eˣ dx = eˣ + C]',
+    '[RAPPEL : ∫sin x dx = −cos x + C]',
+    '[RAPPEL : ∫cos x dx = sin x + C]',
+    '[RAPPEL : ∫(u\'·f(u)) dx = F(u) + C  (substitution)]',
+  ],
+  derivat: [
+    '[RAPPEL : (u·v)\' = u\'v + uv\']',
+    '[RAPPEL : (u/v)\' = (u\'v − uv\') / v²]',
+    '[RAPPEL : (f∘g)\'(x) = f\'(g(x))·g\'(x)]',
+  ],
+}
+
+function detectChapitreKey(chapitre) {
+  const ch = (chapitre || '').toLowerCase()
+  if (/intégr|primitiv/.test(ch)) return 'integr'
+  if (/dérivat|dériver/.test(ch)) return 'derivat'
+  return null
+}
+
+function buildPreambleParagraphs(methodeTemplate, chapitre, includeRappel) {
+  const paragraphs = []
+  if (methodeTemplate) {
+    paragraphs.push(...parseMathText(methodeTemplate))
+    paragraphs.push(spacer())
+  }
+  const chapitreKey = detectChapitreKey(chapitre)
+  if (includeRappel && chapitreKey && RAPPEL_STATIQUE[chapitreKey]) {
+    const rappelText = RAPPEL_STATIQUE[chapitreKey].join('\n')
+    paragraphs.push(...parseMathText(rappelText, { includeRappel: true }))
+    paragraphs.push(spacer())
+  }
+  return paragraphs
+}
+
 function makeHeader(subtitle, date) {
   return new Header({
     children: [new Paragraph({
@@ -612,7 +650,7 @@ function makeHeader(subtitle, date) {
   })
 }
 
-export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement, includeRappel = true }) {
+export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement, includeRappel = true, methodeTemplate = null }) {
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
   const niveauL = NIVEAUX.find(n => n.value === niveau)?.label ?? niveau ?? ''
   const typeL   = TYPES_ENSEIGNEMENT.find(t => t.value === typeEnseignement)?.label ?? typeEnseignement ?? ''
@@ -636,6 +674,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
+        ...buildPreambleParagraphs(methodeTemplate, chapitre, includeRappel),
         ...parseMathText(auTexte, { includeRappel }),
         spacer(),
       ],
@@ -646,7 +685,7 @@ export async function exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseigne
   saveAs(blob, `MathActif_AU_${(chapitre || 'cours').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`)
 }
 
-export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, chapitre, niveau, typeEnseignement, arMode = false, includeRappel = true }) {
+export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, chapitre, niveau, typeEnseignement, arMode = false, includeRappel = true, methodeTemplate = null }) {
   const profilDef   = PROFILS.find(p => p.value === profil)
   const profilLabel = profilDef?.label ?? profil
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -673,6 +712,7 @@ export async function exportProfilMathDocx({ profil, auTexte, conseilsTexte, cha
         ]),
         spacer(),
         sectionTitle('Document avec Aménagements Universels'),
+        ...buildPreambleParagraphs(methodeTemplate, chapitre, includeRappel),
         ...parseMathText(auTexte, { includeRappel }),
         spacer(),
         new Paragraph({ text: '', pageBreakBefore: true }),

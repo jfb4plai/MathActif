@@ -95,7 +95,6 @@ export default function MathAdapter() {
           action: 'appliquer_au_math',
           context: {
             activite: activiteProtected, objectif, niveau, type_enseignement: typeEns, chapitre,
-            methodeTemplate: useMethodeFixed ? (buildMethodeTemplate(chapitre) ?? null) : null,
           },
         }),
       })
@@ -163,7 +162,8 @@ export default function MathAdapter() {
   async function exporterAU() {
     if (!auTexte) return
     setExporting(true)
-    await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns, includeRappel })
+    const methodeTemplate = useMethodeFixed ? (buildMethodeTemplate(chapitre) ?? null) : null
+    await exportAuMathDocx({ auTexte, chapitre, niveau, typeEnseignement: typeEns, includeRappel, methodeTemplate })
     setExporting(false)
   }
 
@@ -171,9 +171,10 @@ export default function MathAdapter() {
     if (!auTexte) { setError("Génère d'abord le document AU avant d'exporter une version profil."); return }
     setExportingProfil(profil)
     const showAr = arMode && ['dyslexie', 'dyspraxie', 'dyscalculie'].includes(profil)
+    const methodeTemplate = useMethodeFixed ? (buildMethodeTemplate(chapitre) ?? null) : null
     await exportProfilMathDocx({
       profil, auTexte, conseilsTexte: texteFinal,
-      chapitre, niveau, typeEnseignement: typeEns, arMode: showAr, includeRappel,
+      chapitre, niveau, typeEnseignement: typeEns, arMode: showAr, includeRappel, methodeTemplate,
     })
     setExportingProfil('')
   }

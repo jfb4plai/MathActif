@@ -101,44 +101,7 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
    _______________________________________________
    (exactement 3 lignes — ni plus, ni moins)
 
-4. MÉTHODE — ÉTAPES (section sur la première page, avant le premier exercice) :
-   Insérer une section décrivant la PROCÉDURE MATHÉMATIQUE SPÉCIFIQUE au type d'exercices du document.
-   INTERDIT : généralités du type "lire l'énoncé", "vérifier le résultat", "identifier les données".
-   INTERDIT ABSOLU : le terme "dérivées partielles" (dérivées partielles = calcul multivariable ∂f/∂x, hors programme S6 FWB).
-   OBLIGATOIRE : les étapes nomment les objets mathématiques du programme S3-S6 FWB : primitive F(x), substitution u=g(x), formule d'intégration, règle de dérivation, etc.
-   VOCABULAIRE CORRECT pour l'intégration : "primitive", "formule d'intégration", "substitution u=...", "intégrale directe" — JAMAIS "dérivée partielle".
-
-   Exemple CORRECT pour calcul de primitives (intégrales directes + substitution) :
-   Méthode — Calcul de primitives
-   Étape 1 : Reconnaître la forme — intégrale directe (∫xⁿ, ∫sin x, ∫cos x, ∫eˣ...) ou composée (substitution)
-   Étape 2 : Pour une forme directe — appliquer la formule de primitive correspondante
-   Étape 3 : Pour une forme composée — poser u = [partie interne] et calculer du = u'(x)dx
-   Étape 4 : Réécrire l'intégrale entièrement en u et du, puis intégrer en u
-   Étape 5 : Remplacer u par son expression en x — ajouter + C
-   Étape 6 : Contrôle : dériver F(x) doit redonner f(x)
-
-   Exemple CORRECT pour dérivation (règle du quotient) :
-   Méthode — Dérivation par la règle du quotient
-   Étape 1 : Identifier u(x) = numérateur, v(x) = dénominateur
-   Étape 2 : Calculer u'(x) et v'(x)
-   Étape 3 : Appliquer f'(x) = (u'v − uv') / v²
-
-   Format OBLIGATOIRE (adapter au type réel du document) :
-   Méthode — [nom mathématique précis du chapitre, ex : Calcul de primitives]
-   Étape 1 : [action mathématique concrète avec vocabulaire FWB correct]
-   ...
-   (4 à 6 étapes — pas de [saut_de_page] après cette section)
-
-5. FORMULE DE RAPPEL : insérer [RAPPEL : formule] juste avant l'exercice qui l'utilise pour la première fois.
-   Ne pas répéter le même RAPPEL pour chaque exercice — une seule fois par type de formule.
-   Formules d'intégration à utiliser si pertinentes :
-   ∫xⁿ dx = xⁿ⁺¹/(n+1) + C (n ≠ −1) · ∫(1/x)dx = ln|x| + C · ∫eˣ dx = eˣ + C
-   ∫sin x dx = −cos x + C · ∫cos x dx = sin x + C · ∫tan x dx = −ln|cos x| + C
-   ∫(1/(1+x²))dx = arctan x + C · ∫(u'·f(u))dx = F(u) + C (substitution)
-   Pour la dérivation (si le document en contient) : f'(u·v) = u'v + uv' · f'(u/v) = (u'v − uv')/v²
-   INTERDIT : inclure des formules de dérivation dans le RAPPEL d'un document qui ne contient que des intégrales.
-
-6. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
+4. ÉQUATIONS INTACTES — RÈGLE ABSOLUE :
    Les tokens «MATH_N» représentent des équations protégées. NE JAMAIS les modifier, les déplacer, les supprimer, ni les reformuler.
    Les traiter comme des blocs opaques — ils seront restaurés après génération.
    La règle des 15 mots ne s'applique pas aux consignes contenant des tokens «MATH_N».
@@ -156,8 +119,6 @@ NOTATION MATHÉMATIQUE DANS L'AU :
 RÈGLES GÉNÉRALES :
 - Produire UNE SEULE version : le document avec AU intégrés — PAS l'original suivi de l'AU.
 - Ne jamais reproduire la liste des exercices en résumé ou en tête de document.
-- Si [MÉTHODE FIXE] figure dans le message utilisateur : l'insérer VERBATIM en tête du document, avant le premier exercice — sans modifier un seul mot, sans ajouter d'étapes, sans changer le titre. Ne pas générer d'autre section Méthode.
-- Sinon : générer la section Méthode selon la règle 4.
 - Ne jamais reproduire dans le corps le titre du document, la classe, le niveau ou le type d'enseignement — ces données figurent déjà dans le tableau d'en-tête.
 - Conserver tous les énoncés originaux tels quels (les intégrer dans la structure AU).
 - Aucun commentaire ni introduction.
@@ -206,10 +167,7 @@ ${ANTI_CLAUDISATION}`
 
 function buildUserMessage(action, context) {
   if (action === 'appliquer_au_math') {
-    const methodeFixe = context.methodeTemplate
-      ? `[MÉTHODE FIXE — copier verbatim en tête du document, avant le premier exercice]\n${context.methodeTemplate}\n[FIN MÉTHODE FIXE]\n\n`
-      : ''
-    return `${methodeFixe}Document mathématique original (les tokens «MATH_N» sont des équations protégées) :
+    return `Document mathématique original (les tokens «MATH_N» sont des équations protégées) :
 """
 ${context.activite ?? 'Non fourni'}
 """
