@@ -103,26 +103,29 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
 
 4. MÉTHODE — ÉTAPES (section sur la première page, avant le premier exercice) :
    Insérer une section décrivant la PROCÉDURE MATHÉMATIQUE SPÉCIFIQUE au type d'exercices du document.
-   INTERDIT : généralités du type "lire l'énoncé", "vérifier le résultat" — uniquement des étapes mathématiques concrètes et directement applicables.
-   OBLIGATOIRE : les étapes doivent nommer les objets mathématiques réels (la primitive, u(x), la substitution, la règle de dérivation...).
+   INTERDIT : généralités du type "lire l'énoncé", "vérifier le résultat", "identifier les données".
+   INTERDIT ABSOLU : le terme "dérivées partielles" (dérivées partielles = calcul multivariable ∂f/∂x, hors programme S6 FWB).
+   OBLIGATOIRE : les étapes nomment les objets mathématiques du programme S3-S6 FWB : primitive F(x), substitution u=g(x), formule d'intégration, règle de dérivation, etc.
+   VOCABULAIRE CORRECT pour l'intégration : "primitive", "formule d'intégration", "substitution u=...", "intégrale directe" — JAMAIS "dérivée partielle".
 
-   Exemple pour des intégrales par substitution :
-   Méthode — Intégration par substitution
-   Étape 1 : Repérer dans f(x) une sous-expression u = g(x) dont la dérivée g'(x) est présente (à un facteur k près)
-   Étape 2 : Calculer du = g'(x)dx et isoler dx = du/g'(x)
-   Étape 3 : Réécrire l'intégrale entièrement en u et du
-   Étape 4 : Calculer ∫h(u)du en appliquant les formules de base
-   Étape 5 : Remplacer u par g(x) dans le résultat — ajouter + C
+   Exemple CORRECT pour calcul de primitives (intégrales directes + substitution) :
+   Méthode — Calcul de primitives
+   Étape 1 : Reconnaître la forme — intégrale directe (∫xⁿ, ∫sin x, ∫cos x, ∫eˣ...) ou composée (substitution)
+   Étape 2 : Pour une forme directe — appliquer la formule de primitive correspondante
+   Étape 3 : Pour une forme composée — poser u = [partie interne] et calculer du = u'(x)dx
+   Étape 4 : Réécrire l'intégrale entièrement en u et du, puis intégrer en u
+   Étape 5 : Remplacer u par son expression en x — ajouter + C
+   Étape 6 : Contrôle : dériver F(x) doit redonner f(x)
 
-   Exemple pour des dérivées (règle du quotient) :
+   Exemple CORRECT pour dérivation (règle du quotient) :
    Méthode — Dérivation par la règle du quotient
-   Étape 1 : Identifier u(x) = numérateur et v(x) = dénominateur
+   Étape 1 : Identifier u(x) = numérateur, v(x) = dénominateur
    Étape 2 : Calculer u'(x) et v'(x)
    Étape 3 : Appliquer f'(x) = (u'v − uv') / v²
 
-   Format OBLIGATOIRE (adapter au contenu réel du document) :
-   Méthode — [type mathématique précis identifié dans le document]
-   Étape 1 : [action mathématique concrète]
+   Format OBLIGATOIRE (adapter au type réel du document) :
+   Méthode — [nom mathématique précis du chapitre, ex : Calcul de primitives]
+   Étape 1 : [action mathématique concrète avec vocabulaire FWB correct]
    ...
    (4 à 6 étapes — pas de [saut_de_page] après cette section)
 

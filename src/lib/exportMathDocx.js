@@ -514,7 +514,8 @@ function parseMathText(text, { includeRappel = true } = {}) {
       paragraphs.push(new Paragraph({ text: '', pageBreakBefore: true })); i++; continue
     }
     if (isFractionBar(trimmed)) { i++; continue }
-    if (/^-{3,}$/.test(trimmed)) { i++; continue }
+    // Séparateurs markdown : ---, ***, ===, et em-dash seul (—)
+    if (/^[-—–*=]{3,}$/.test(trimmed) || /^[—–]$/.test(trimmed)) { i++; continue }
 
     // Strip marqueurs markdown produits par Haiku : **gras** partout + # en tête
     const display = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/^#+\s*/, '')
@@ -537,13 +538,52 @@ function parseMathText(text, { includeRappel = true } = {}) {
     // Filtre RAPPEL optionnel : sauter la ligne si l'enseignant l'a désactivé
     if (!includeRappel && /^\[?RAPPEL/i.test(display)) { i++; continue }
 
-    const isTitle = /^(Exercice|Étape|Méthode|Section|RAPPEL|AE|AU)\s/.test(display)
+    // Bloc [RAPPEL : ...] généré par Haiku (avec crochets) — fond vert léger
+    if (/^\[RAPPEL/i.test(display)) {
+      const text = display.replace(/^\[RAPPEL\s*[:\-]\s*/i, 'Rappel : ').replace(/\]$/, '')
+      paragraphs.push(new Paragraph({
+        children: [new TextRun({ text, italics: true, color: '0a6b50', size: 22 })],
+        spacing: { before: 120, after: 80, line: 300 },
+        shading: { type: ShadingType.CLEAR, fill: 'E6F7F2' },
+        keepNext: blockContinues(lines, i) || hasAuContentAhead(lines, i),
+      }))
+      i++
+      continue
+    }
+
+    const isExercice = /^(Exercice|AE|AU)\s/.test(display)
+    const isMethode  = /^Méthode\s/.test(display)
+    const isEtape    = /^Étape\s/.test(display)
+    const isRappel   = /^RAPPEL\s/.test(display)
+    const isTitle    = isExercice || isMethode || isEtape || isRappel || /^Section\s/.test(display)
     // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
     const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
 
-    if (isTitle) {
+    if (isExercice || isMethode) {
+      // Même style que sectionTitle() — teal gras, bordure basse
       paragraphs.push(new Paragraph({
-        children: renderMathLineOmml(display.replace(/^#+\s*/, '')),
+        children: [new TextRun({ text: display, bold: true, color: BRAND_TEAL, size: 26 })],
+        spacing: { before: 280, after: 100 },
+        keepNext: true,
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BRAND_TEAL, space: 4 } },
+      }))
+    } else if (isEtape) {
+      paragraphs.push(new Paragraph({
+        children: [new TextRun({ text: display, bold: true, size: 22 })],
+        spacing: { before: 80, after: 30 },
+        keepNext: true,
+        indent: { left: 160 },
+      }))
+    } else if (isRappel) {
+      paragraphs.push(new Paragraph({
+        children: [new TextRun({ text: display, italics: true, color: '0a6b50', size: 22 })],
+        spacing: { before: 120, after: 60 },
+        shading: { type: ShadingType.CLEAR, fill: 'E6F7F2' },
+        keepNext: true,
+      }))
+    } else if (isTitle) {
+      paragraphs.push(new Paragraph({
+        children: renderMathLineOmml(display),
         spacing: { before: 200, after: 60 },
         keepNext: true,
       }))
