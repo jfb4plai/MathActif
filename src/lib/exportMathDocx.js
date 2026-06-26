@@ -465,18 +465,16 @@ function blockContinues(lines, i) {
  * entre l'énoncé et la zone de travail.
  */
 function hasAuContentAhead(lines, i) {
-  let blanks = 0, nonBlanks = 0
-  for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+  let blanks = 0
+  for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
     const t = lines[j].trim()
     if (!t) {
       blanks++
       if (blanks > 2) return false
       continue
     }
-    blanks = 0
-    if (/^(Zone de travail|Données\s*:|Inconnue|_{5,})/i.test(t)) return true
-    // Traverse une ligne intermédiaire (ex: "**2.** $\int...$") avant de trouver ZDT
-    if (++nonBlanks >= 2) return false
+    // S'arrête au premier non-blanc : vrai si contenu AU, faux sinon
+    return /^(Zone de travail|Données\s*:|Inconnue|_{5,})/i.test(t)
   }
   return false
 }
@@ -519,6 +517,22 @@ function parseMathText(text) {
 
     // Strip marqueurs markdown produits par Haiku : **gras** partout + # en tête
     const display = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/^#+\s*/, '')
+
+    // Lignes de soulignement Zone de travail (___) : keepNext seulement si la
+    // ligne suivante est aussi une ligne de soulignement. La dernière ___ rompt
+    // la chaîne → Word peut paginer entre exercices, pas entre énoncé et ZDT.
+    if (/^_{3,}$/.test(display)) {
+      const nextIsUnderline = i + 1 < lines.length && /^_{3,}$/.test(lines[i + 1].trim())
+      paragraphs.push(new Paragraph({
+        children: [new TextRun({ text: display })],
+        spacing: { after: 100, line: 360, lineRule: 'auto' },
+        keepLines: true,
+        keepNext: nextIsUnderline,
+      }))
+      i++
+      continue
+    }
+
     const isTitle = /^(Exercice|Étape|Section|RAPPEL|AE|AU)\s/.test(display)
     // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
     const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
