@@ -514,6 +514,7 @@ function parseMathText(text, { includeRappel = true } = {}) {
       paragraphs.push(new Paragraph({ text: '', pageBreakBefore: true })); i++; continue
     }
     if (isFractionBar(trimmed)) { i++; continue }
+    if (/^-{3,}$/.test(trimmed)) { i++; continue }
 
     // Strip marqueurs markdown produits par Haiku : **gras** partout + # en tête
     const display = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/^#+\s*/, '')

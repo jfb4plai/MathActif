@@ -102,14 +102,29 @@ RÈGLES AU MATHS — dans cet ordre de priorité :
    (exactement 3 lignes — ni plus, ni moins)
 
 4. MÉTHODE — ÉTAPES (section sur la première page, avant le premier exercice) :
-   Insérer une section décrivant la procédure générale déduite du type d'exercices du document.
-   Format OBLIGATOIRE :
-   Méthode — [type de calcul identifié, ex : Calcul d'intégrales par substitution]
-   Étape 1 : [action concrète]
-   Étape 2 : [action]
-   Étape 3 : [action]
-   (4 à 6 étapes max — globales au chapitre, pas spécifiques à un exercice)
-   Ne pas insérer de [saut_de_page] après cette section — elle reste sur la même page que les premiers exercices.
+   Insérer une section décrivant la PROCÉDURE MATHÉMATIQUE SPÉCIFIQUE au type d'exercices du document.
+   INTERDIT : généralités du type "lire l'énoncé", "vérifier le résultat" — uniquement des étapes mathématiques concrètes et directement applicables.
+   OBLIGATOIRE : les étapes doivent nommer les objets mathématiques réels (la primitive, u(x), la substitution, la règle de dérivation...).
+
+   Exemple pour des intégrales par substitution :
+   Méthode — Intégration par substitution
+   Étape 1 : Repérer dans f(x) une sous-expression u = g(x) dont la dérivée g'(x) est présente (à un facteur k près)
+   Étape 2 : Calculer du = g'(x)dx et isoler dx = du/g'(x)
+   Étape 3 : Réécrire l'intégrale entièrement en u et du
+   Étape 4 : Calculer ∫h(u)du en appliquant les formules de base
+   Étape 5 : Remplacer u par g(x) dans le résultat — ajouter + C
+
+   Exemple pour des dérivées (règle du quotient) :
+   Méthode — Dérivation par la règle du quotient
+   Étape 1 : Identifier u(x) = numérateur et v(x) = dénominateur
+   Étape 2 : Calculer u'(x) et v'(x)
+   Étape 3 : Appliquer f'(x) = (u'v − uv') / v²
+
+   Format OBLIGATOIRE (adapter au contenu réel du document) :
+   Méthode — [type mathématique précis identifié dans le document]
+   Étape 1 : [action mathématique concrète]
+   ...
+   (4 à 6 étapes — pas de [saut_de_page] après cette section)
 
 5. FORMULE DE RAPPEL : insérer [RAPPEL : formule] juste avant l'exercice qui l'utilise pour la première fois.
    Ne pas répéter le même RAPPEL pour chaque exercice — une seule fois par type de formule.
