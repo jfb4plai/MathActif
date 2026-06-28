@@ -63,7 +63,7 @@ export async function extractFile(file) {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error ?? 'Erreur OCR')
-    return { text: data.text, pageWarning }
+    return { text: data.text, hasDoutes: data.hasDoutes ?? false, nbDoutes: data.nbDoutes ?? 0, pageWarning }
   }
 
   if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
@@ -75,7 +75,7 @@ export async function extractFile(file) {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error ?? 'Erreur OCR')
-    return { text: data.text }
+    return { text: data.text, hasDoutes: data.hasDoutes ?? false, nbDoutes: data.nbDoutes ?? 0 }
   }
 
   throw new Error('Format non supporté — utilisez PDF, image JPG/PNG/WebP, ou .docx.')

@@ -152,10 +152,41 @@ IA + maths : Mahi Haddad & Beaud (2025) dumas-05106961
 RÈGLE ABSOLUE — TOKENS MATH :
 Les tokens «MATH_N» représentent des équations. Les mentionner par leur token si nécessaire dans les conseils — ne jamais les reformuler.
 
-Après le dernier profil, insérer exactement :
+Si 2 profils ou plus sont sélectionnés ET qu'une co-occurrence pédagogiquement pertinente existe en maths (ex : TDAH + dyscalculie, dyslexie + dyscalculie, dyspraxie + dyscalculie), ajouter avant le bloc final une section courte :
+[CO-OCCURRENCE : Profil A + Profil B]
+- 1 stratégie transversale qui sert les deux simultanément en mathématiques
+- 1 point de vigilance si certaines adaptations sont contradictoires (ex : plus de temps vs plus de structure)
+N'ajouter cette section que si la co-occurrence est réelle et fréquente en classe de maths ordinaire. Si les profils sont indépendants, l'omettre.
+
+Après le dernier profil (et l'éventuelle co-occurrence), insérer exactement :
 ---
 Ces conseils sont des suggestions — pas des prescriptions. L'enseignant connaît ses élèves et décide des ajustements pertinents.
 ---
+
+Si un historique d'adaptations précédentes est fourni dans le message utilisateur, observer le style, le vocabulaire et le niveau de détail de cet enseignant et adopter le même registre dans les conseils. Ne pas le mentionner explicitement.
+
+${ANTI_CLAUDISATION}`
+  }
+
+  if (action === 'verifier_exercice_math') {
+    return `${base}
+
+Tu simules un élève du profil indiqué et tu tentes de résoudre l'exercice adapté (avec zones de travail et données extraites) tel qu'il est présenté.
+Objectif : vérifier que l'exercice reste solvable pour ce profil sans aide extérieure.
+
+Format de réponse :
+VERDICT : [Solvable / Partiellement solvable / Non solvable]
+RAISON : [1–2 phrases — ancré dans le profil et les spécificités mathématiques : notation, longueur de calcul, abstraction, mémorisation]
+SUGGESTION : [Si non ou partiellement solvable : 1 ajustement minimal concret]
+
+Règles :
+- Porter uniquement sur l'exercice adapté (AU + zones de travail), pas sur l'original.
+- Ne pas reformuler la consigne ni réécrire l'exercice.
+- Si solvable, SUGGESTION est absent.
+- Les tokens «MATH_N» représentent des équations — les mentionner par token si nécessaire, ne jamais les réécrire.
+- Limite : 6 lignes maximum.
+
+Sources RISS : Thibaut (2016) dumas-01488139 · Fliti & Avarello (2025) hal-05450529
 
 ${ANTI_CLAUDISATION}`
   }
@@ -178,6 +209,9 @@ Applique les Aménagements Universels et retourne le document reformaté directe
   if (action === 'adapter_activite_math') {
     const profils = (context.profils ?? []).join(', ') || 'non précisés'
     const baseText = context.au_texte || context.activite
+    const histoSection = context.historique_enseignant?.length
+      ? `\nStyle de cet enseignant — exemples d'adaptations précédentes :\n${context.historique_enseignant.map((h, i) => `[${i + 1}] ${h}`).join('\n')}\n`
+      : ''
     return `Document de référence (AU ou original, tokens «MATH_N» = équations protégées) :
 """
 ${baseText ?? 'Non fourni'}
@@ -185,8 +219,18 @@ ${baseText ?? 'Non fourni'}
 
 Objectif : ${context.objectif ?? 'Non précisé'}
 Profils présents dans la classe : ${profils}
-
+${histoSection}
 Génère les conseils pédagogiques par profil avec des exemples tirés du document.`
+  }
+
+  if (action === 'verifier_exercice_math') {
+    return `Profil simulé : ${context.profil ?? 'Non précisé'}
+Exercice adapté à vérifier (tokens «MATH_N» = équations protégées) :
+"""
+${context.exercice_adapte ?? 'Non fourni'}
+"""
+
+Simule la résolution depuis ce profil et donne ton verdict.`
   }
 
   return context.prompt ?? ''

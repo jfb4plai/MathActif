@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { PROFILS, NIVEAUX, TYPES_ENSEIGNEMENT } from '../lib/constants'
@@ -10,6 +10,59 @@ import { buildMethodeTemplate } from '../lib/methodeTemplates'
 import { RAPPEL_STATIQUE, detectChapitreKey } from '../lib/rappelData'
 import MathDisplay from '../components/MathDisplay'
 
+// ── Validation AU maths (client-side) ────────────────────────
+function validateMathAuRules(text) {
+  const lines = text.split('\n')
+  const exerciceLines = lines.filter(l => /^Exercice\s+\d+/i.test(l.trim()))
+  const numerotationOk = exerciceLines.length > 0
+
+  const nbZdt = (text.match(/^_{3,}$/gm) || []).length
+  const zdtOk = nbZdt > 0
+
+  const nbDoutes = (text.match(/\[\?/g) || []).length
+  const sansDoutesOk = nbDoutes === 0
+
+  const nbTokensMath = (text.match(/«MATH_\d+»/g) || []).length
+  const mathRestoredOk = nbTokensMath === 0
+
+  const nbSauts = (text.match(/\[saut_de_page\]/gi) || []).length
+
+  return [
+    {
+      id: 'numerotation',
+      label: 'Exercices numérotés (Exercice 1, 2…)',
+      ok: numerotationOk,
+      detail: numerotationOk ? `${exerciceLines.length} exercice(s)` : 'Aucun exercice numéroté trouvé',
+    },
+    {
+      id: 'zdt',
+      label: 'Zones de travail présentes (lignes ___)',
+      ok: zdtOk,
+      detail: zdtOk ? `${nbZdt} ligne(s) de travail` : 'Aucune zone de travail — vérifiez le document',
+      warn: !zdtOk,
+    },
+    {
+      id: 'meme_plan',
+      label: 'Règle « Même Plan » — sauts de page',
+      ok: true,
+      detail: nbSauts > 0 ? `${nbSauts} saut(s) de page inséré(s)` : 'Aucun saut (thème unique ou non requis)',
+      info: true,
+    },
+    {
+      id: 'math_restored',
+      label: 'Équations correctement restaurées',
+      ok: mathRestoredOk,
+      detail: mathRestoredOk ? 'Toutes les équations sont restaurées' : `${nbTokensMath} token(s) «MATH_N» non restauré(s) — regénérez`,
+    },
+    {
+      id: 'sans_doutes',
+      label: 'Aucun passage incertain [? ?] résiduel',
+      ok: sansDoutesOk,
+      detail: sansDoutesOk ? 'Texte propre' : `${nbDoutes} passage(s) incertain(s) — corrigez avant export`,
+    },
+  ]
+}
+
 export default function MathAdapter() {
   const { user } = useAuth()
 
@@ -18,6 +71,9 @@ export default function MathAdapter() {
   const [importError, setImportError]   = useState('')
   const [importedFile, setImportedFile] = useState('')
   const [activite, setActivite]         = useState('')
+  const [hasDoutes, setHasDoutes]       = useState(false)
+  const [nbDoutes, setNbDoutes]         = useState(0)
+  const [pageWarning, setPageWarning]   = useState(null)
 
   const [niveau, setNiveau]             = useState('')
   const [typeEns, setTypeEns]           = useState('')
@@ -29,9 +85,15 @@ export default function MathAdapter() {
   const [generatingAu, setGeneratingAu] = useState(false)
   const [generating, setGenerating]     = useState(false)
   const [auTexte, setAuTexte]           = useState('')
+  const [auValidation, setAuValidation] = useState(null)
   const [conseils, setConseils]         = useState('')
   const [texteFinal, setTexteFinal]     = useState('')
   const [error, setError]               = useState('')
+  const [verifying, setVerifying]       = useState('')
+  const [verificationResults, setVerificationResults] = useState({})
+  const [histoAdaptations, setHistoAdaptations] = useState([])
+  const [savedId, setSavedId]           = useState(null)
+  const [feedback, setFeedback]         = useState(null)
 
   const [useMethodeFixed, setUseMethodeFixed] = useState(true)
   const [methodeEdit, setMethodeEdit]         = useState(null)
@@ -50,6 +112,21 @@ export default function MathAdapter() {
     const key = detectChapitreKey(val)
     setRappelSelected(key ? RAPPEL_STATIQUE[key].map(() => true) : null)
   }
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('math_adaptations')
+      .select('texte_final')
+      .eq('user_id', user.id)
+      .not('texte_final', 'is', null)
+      .neq('texte_final', '')
+      .order('created_at', { ascending: false })
+      .limit(3)
+      .then(({ data }) => {
+        if (data?.length) setHistoAdaptations(data.map(d => d.texte_final.slice(0, 250)))
+      })
+  }, [user])
 
   function getSelectedRappelLines() {
     if (!includeRappel || !rappelSelected) return null
@@ -74,14 +151,22 @@ export default function MathAdapter() {
     setImportedFile(file.name)
     setActivite('')
     setAuTexte('')
+    setAuValidation(null)
     setConseils('')
     setTexteFinal('')
     setSaved(false)
+    setHasDoutes(false)
+    setNbDoutes(0)
+    setPageWarning(null)
+    setVerificationResults({})
     try {
       const result = ext === 'docx'
         ? await extractDocxMath(file)
         : await extractFile(file)
       setActivite(result.text)
+      setHasDoutes(result.hasDoutes ?? false)
+      setNbDoutes(result.nbDoutes ?? 0)
+      setPageWarning(result.pageWarning ?? null)
     } catch (err) {
       setImportError(err.message)
       setImportedFile('')
@@ -120,7 +205,9 @@ export default function MathAdapter() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Erreur serveur')
-      setAuTexte(restoreMath(data.text, map))
+      const restored = restoreMath(data.text, map)
+      setAuTexte(restored)
+      setAuValidation(validateMathAuRules(restored))
       setNbLignesAtLastGen(nbLignesZdt)
     } catch (err) {
       setError(err.message)
@@ -148,6 +235,7 @@ export default function MathAdapter() {
             niveau,
             type_enseignement: typeEns,
             chapitre,
+            historique_enseignant: histoAdaptations.length ? histoAdaptations : undefined,
           },
         }),
       })
@@ -164,7 +252,7 @@ export default function MathAdapter() {
 
   async function sauvegarder() {
     setSaving(true)
-    await supabase.from('math_adaptations').insert({
+    const { data } = await supabase.from('math_adaptations').insert({
       user_id: user.id,
       document_original: activite,
       au_texte: auTexte,
@@ -175,9 +263,46 @@ export default function MathAdapter() {
       type_enseignement: typeEns,
       chapitre,
       objectif,
-    })
+    }).select('id').single()
+    if (data?.id) setSavedId(data.id)
+    setFeedback(null)
     setSaved(true)
     setSaving(false)
+  }
+
+  async function envoyerFeedback(valeur) {
+    if (!savedId) return
+    setFeedback(valeur)
+    await supabase.from('math_adaptations').update({ feedback: valeur }).eq('id', savedId)
+  }
+
+  async function verifierExercice(profil) {
+    if (!auTexte) return
+    setVerifying(profil)
+    try {
+      const profilLabel = PROFILS.find(p => p.value === profil)?.label ?? profil
+      const { protected: auProtected, map } = protectMath(auTexte)
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verifier_exercice_math',
+          context: {
+            profil: profilLabel,
+            exercice_adapte: auProtected,
+            niveau,
+            type_enseignement: typeEns,
+            chapitre,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erreur serveur')
+      setVerificationResults(prev => ({ ...prev, [profil]: restoreMath(data.text, map) }))
+    } catch (err) {
+      setError(err.message)
+    }
+    setVerifying('')
   }
 
   async function exporterAU() {
@@ -374,6 +499,34 @@ export default function MathAdapter() {
         </div>
         {importError && <p className="text-xs text-red-500 mt-2">{importError}</p>}
 
+        {importedFile && !importing && !hasDoutes && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+            <span className="text-blue-500 text-sm mt-0.5">ℹ</span>
+            <div className="text-xs text-blue-800 space-y-1">
+              <p><strong>Texte extrait — relisez avant de générer.</strong></p>
+              <p>Vérifiez particulièrement que les expressions mathématiques sont bien présentes. Si une équation est absente, importez le fichier en .docx (équations préservées).</p>
+            </div>
+          </div>
+        )}
+        {importedFile && !importing && hasDoutes && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+            <span className="text-amber-500 text-sm mt-0.5">⚠</span>
+            <p className="text-xs text-amber-800">
+              <strong>{nbDoutes} passage{nbDoutes > 1 ? 's' : ''} incertain{nbDoutes > 1 ? 's' : ''}</strong> — signalé{nbDoutes > 1 ? 's' : ''}{' '}
+              <code className="bg-amber-100 px-1 rounded">[? ... ?]</code> dans le texte. En maths, une expression mal lue change tout l'exercice — corrigez avant de générer.
+            </p>
+          </div>
+        )}
+        {pageWarning && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2">
+            <span className="text-orange-500 text-sm mt-0.5">⚠</span>
+            <p className="text-xs text-orange-800">
+              <strong>PDF de {pageWarning.total} pages</strong> — seules les {pageWarning.extracted} premières pages ont été analysées.
+              Importez le reste du document en un second passage.
+            </p>
+          </div>
+        )}
+
         {activite && (
           <div className="mt-4">
             <label className="label">Aperçu — lecture seule</label>
@@ -420,6 +573,49 @@ export default function MathAdapter() {
               {zdtDirty && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
                   Le nombre de lignes a changé ({nbLignesAtLastGen} → {nbLignesZdt}). Cliquez sur «Regénérer AU» pour appliquer.
+                </div>
+              )}
+
+              {/* Validation AU maths */}
+              {auValidation && (
+                <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+                    <p className="text-xs font-semibold text-gray-700">Vérification des règles AU maths</p>
+                  </div>
+                  <ul className="divide-y divide-gray-100">
+                    {auValidation.map(rule => (
+                      <li key={rule.id} className="flex items-start gap-3 px-4 py-2">
+                        <span className={`mt-0.5 text-sm font-bold shrink-0 ${
+                          rule.info ? 'text-blue-400' : rule.warn ? 'text-amber-400' : rule.ok ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {rule.info ? 'ℹ' : rule.warn ? '?' : rule.ok ? '✓' : '✗'}
+                        </span>
+                        <div>
+                          <p className={`text-xs font-medium ${rule.ok && !rule.warn ? 'text-gray-700' : rule.warn ? 'text-amber-700' : 'text-red-700'}`}>
+                            {rule.label}
+                          </p>
+                          <p className="text-xs text-gray-400">{rule.detail}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {auValidation?.some(r => r.id === 'sans_doutes' && !r.ok) && (
+                <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+                  <span className="text-red-500 text-sm mt-0.5">✗</span>
+                  <p className="text-xs text-red-800">
+                    <strong>Export bloqué</strong> — des passages incertains <code className="bg-red-100 px-1 rounded">[? ?]</code> subsistent dans l'aperçu AU.
+                    Corrigez-les dans le .docx Word après export, ou regénérez.
+                  </p>
+                </div>
+              )}
+              {auValidation?.some(r => r.id === 'math_restored' && !r.ok) && (
+                <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+                  <span className="text-red-500 text-sm mt-0.5">✗</span>
+                  <p className="text-xs text-red-800">
+                    <strong>Export bloqué</strong> — des équations n'ont pas été restaurées correctement. Cliquez sur «Regénérer AU».
+                  </p>
                 </div>
               )}
 
@@ -478,7 +674,11 @@ export default function MathAdapter() {
                 )}
               </div>
 
-              <button onClick={exporterAU} disabled={exporting} className="btn-primary text-sm">
+              <button
+                onClick={exporterAU}
+                disabled={exporting || auValidation?.some(r => ['sans_doutes', 'math_restored'].includes(r.id) && !r.ok)}
+                className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 {exporting ? 'Export…' : '⬇ Exporter AU universel (.docx)'}
               </button>
             </div>
@@ -557,18 +757,40 @@ export default function MathAdapter() {
               <p className="text-xs font-semibold text-gray-700">Exports par profil (AU universel + conseils)</p>
               {profilsChoisis.map(profil => {
                 const pd = PROFILS.find(p => p.value === profil)
+                const vr = verificationResults[profil]
+                const isVerif = verifying === profil
+                const isExport = exportingProfil === profil
                 return (
-                  <div key={profil}
-                    className="flex items-center justify-between gap-3 px-3 py-2 bg-gray-50 rounded-xl border border-gray-200">
-                    <span className="text-sm text-gray-800">{pd?.icon} {pd?.label}</span>
-                    <button onClick={() => exporterProfil(profil)}
-                      disabled={exportingProfil === profil}
-                      className="btn-primary text-xs py-1.5 px-3">
-                      {exportingProfil === profil ? 'Export…' : '⬇ Exporter'}
-                    </button>
+                  <div key={profil} className="rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 px-3 py-2 bg-gray-50">
+                      <span className="text-sm text-gray-800">{pd?.icon} {pd?.label}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => verifierExercice(profil)}
+                          disabled={isVerif || !!vr}
+                          className="btn-secondary text-xs py-1.5 px-3">
+                          {isVerif ? 'Vérif…' : vr ? 'Vérifié ✓' : 'Vérifier'}
+                        </button>
+                        <button onClick={() => exporterProfil(profil)}
+                          disabled={isExport}
+                          className="btn-primary text-xs py-1.5 px-3">
+                          {isExport ? 'Export…' : '⬇ Exporter'}
+                        </button>
+                      </div>
+                    </div>
+                    {vr && (
+                      <div className={`px-3 py-2 text-xs whitespace-pre-wrap border-t ${
+                        /non solvable|partiellement/i.test(vr)
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-green-50 text-green-800 border-green-200'
+                      }`}>
+                        {vr}
+                      </div>
+                    )}
                   </div>
                 )
               })}
+              <p className="text-xs text-gray-400">Vérification solvabilité : Thibaut (2016) dumas-01488139 · Fliti &amp; Avarello (2025) hal-05450529</p>
             </div>
           )}
 
@@ -579,6 +801,19 @@ export default function MathAdapter() {
               {saved ? 'Sauvegardé ✓' : saving ? 'Enregistrement…' : 'Sauvegarder'}
             </button>
           </div>
+
+          {saved && !feedback && (
+            <div className="flex items-center gap-3 pt-3 border-t border-gray-100 mt-3">
+              <span className="text-xs text-gray-500">Ça a fonctionné en classe ?</span>
+              <button onClick={() => envoyerFeedback('positif')} className="text-xl hover:scale-110 transition-transform" title="Oui">👍</button>
+              <button onClick={() => envoyerFeedback('negatif')} className="text-xl hover:scale-110 transition-transform" title="Non">👎</button>
+            </div>
+          )}
+          {feedback && (
+            <p className="text-xs text-gray-400 pt-3 border-t border-gray-100 mt-3">
+              Feedback enregistré {feedback === 'positif' ? '👍' : '👎'} — merci
+            </p>
+          )}
 
           <p className="text-xs text-gray-400 mt-3 border-t border-gray-100 pt-3">
             Sources RISS — Dyscalculie : Thibaut (2016) dumas-01488139 · Le Cam &amp; Toussaint (2017) dumas-01549091 · Mahi Haddad &amp; Beaud (2025) dumas-05106961
