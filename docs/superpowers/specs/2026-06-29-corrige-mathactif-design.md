@@ -211,6 +211,32 @@ exportCorrigeDocx({
 
 ---
 
+## Avertissement "pas de sauvegarde"
+
+Dès que des corrections sont générées, afficher un bandeau persistant dans `CorrigePanel` :
+
+> "Ce corrigé n'est pas sauvegardé. Exportez votre document avant de quitter cette page."
+
+- Style `plai-banner` orange (`#f97316`)
+- Visible jusqu'à ce que l'export soit déclenché
+- Disparaît après le téléchargement (ou reste — à décider : rester est plus sûr)
+
+---
+
+## Coût API Sonnet
+
+Sonnet 4.6 : $3/M tokens entrée, $15/M tokens sortie.
+
+| Scénario | Coût estimé |
+|---|---|
+| 4 exercices simples | ~€0,04 |
+| 6 exercices S4-S6 | ~€0,08 |
+| 8 exercices complexes | ~€0,12 |
+
+50 enseignants actifs, 2x/semaine, 30 semaines : **€120 – €360/an**.
+
+---
+
 ## Contraintes techniques
 
 - `ANTHROPIC_API_KEY` côté serveur uniquement (`api/generate-corrige.js`)
