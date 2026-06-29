@@ -479,7 +479,7 @@ function hasAuContentAhead(lines, i) {
   return false
 }
 
-function parseMathText(text, { includeRappel = true } = {}) {
+export function parseMathText(text, { includeRappel = true, keepAllNext = false } = {}) {
   if (!text) return [new Paragraph({ text: '—' })]
   const lines = text.split('\n')
   const paragraphs = []
@@ -493,7 +493,7 @@ function parseMathText(text, { includeRappel = true } = {}) {
       isFractionBar(lines[i + 1]) &&
       lines[i + 2].trim()
     ) {
-      const keepNextAfter = blockContinues(lines, i + 2) || hasAuContentAhead(lines, i + 2)
+      const keepNextAfter = keepAllNext || blockContinues(lines, i + 2) || hasAuContentAhead(lines, i + 2)
       paragraphs.push(...fractionParagraphs(trimmed, lines[i + 2].trim(), keepNextAfter))
       i += 3
       continue
@@ -502,7 +502,7 @@ function parseMathText(text, { includeRappel = true } = {}) {
     if (!trimmed) {
       // Si du contenu AU suit (Zone de travail, Données, ___), le spacer doit
       // garder keepNext pour ne pas rompre la chaîne de pagination.
-      const zdtAhead = hasAuContentAhead(lines, i)
+      const zdtAhead = keepAllNext || hasAuContentAhead(lines, i)
       paragraphs.push(zdtAhead
         ? new Paragraph({ text: '', spacing: { after: 160 }, keepNext: true })
         : spacer()
@@ -529,7 +529,7 @@ function parseMathText(text, { includeRappel = true } = {}) {
         children: [new TextRun({ text: display })],
         spacing: { after: 100, line: 360, lineRule: 'auto' },
         keepLines: true,
-        keepNext: nextIsUnderline,
+        keepNext: keepAllNext || nextIsUnderline,
       }))
       i++
       continue
@@ -557,7 +557,7 @@ function parseMathText(text, { includeRappel = true } = {}) {
     const isRappel   = /^RAPPEL\s/.test(display)
     const isTitle    = isExercice || isMethode || isEtape || isRappel || /^Section\s/.test(display)
     // keepNext : bloc non terminé OU contenu AU détecté dans les prochaines lignes
-    const stays = blockContinues(lines, i) || hasAuContentAhead(lines, i)
+    const stays = keepAllNext || blockContinues(lines, i) || hasAuContentAhead(lines, i)
 
     if (isExercice || isMethode) {
       // Même style que sectionTitle() — teal gras, bordure basse
