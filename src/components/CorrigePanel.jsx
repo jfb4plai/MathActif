@@ -50,6 +50,7 @@ export default function CorrigePanel({
   }
 
   function updateEtape(corrId, etapeIdx, field, value) {
+    setExported(false)
     setCorrections(prev => prev.map(c =>
       c.id !== corrId ? c : {
         ...c,
@@ -59,18 +60,21 @@ export default function CorrigePanel({
   }
 
   function addEtape(corrId) {
+    setExported(false)
     setCorrections(prev => prev.map(c =>
       c.id !== corrId ? c : { ...c, etapes: [...c.etapes, { formule: '', description: '' }] }
     ))
   }
 
   function removeEtape(corrId, etapeIdx) {
+    setExported(false)
     setCorrections(prev => prev.map(c =>
       c.id !== corrId ? c : { ...c, etapes: c.etapes.filter((_, i) => i !== etapeIdx) }
     ))
   }
 
   function moveEtape(corrId, etapeIdx, dir) {
+    setExported(false)
     setCorrections(prev => prev.map(c => {
       if (c.id !== corrId) return c
       const etapes = [...c.etapes]
@@ -82,6 +86,7 @@ export default function CorrigePanel({
   }
 
   function updateConclusion(corrId, value) {
+    setExported(false)
     setCorrections(prev => prev.map(c =>
       c.id !== corrId ? c : { ...c, conclusion: value }
     ))
@@ -125,7 +130,7 @@ export default function CorrigePanel({
       if (format === 'integre' || format === 'les deux') {
         await exportAuAvecCorrigeDocx({
           auTexte, corrections, chapitre, niveau, typeEnseignement,
-          selectedRappelLines, methodeTemplate,
+          selectedRappelLines, methodeTemplate, audience,
         })
       }
       setExported(true)

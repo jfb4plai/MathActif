@@ -156,7 +156,7 @@ export async function exportCorrigeDocx({ corrections, chapitre, niveau, typeEns
  */
 export async function exportAuAvecCorrigeDocx({
   auTexte, corrections, chapitre, niveau, typeEnseignement,
-  selectedRappelLines = null, methodeTemplate = null,
+  selectedRappelLines = null, methodeTemplate = null, audience = 'enseignant',
 }) {
   const date    = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })
   const niveauL = NIVEAUX.find(n => n.value === niveau)?.label ?? niveau ?? ''
@@ -186,6 +186,9 @@ export async function exportAuAvecCorrigeDocx({
   if (preamble.trim()) {
     bodyParagraphs.push(...parseMathText(preamble))
   }
+  bodyParagraphs.push(spacer())
+  bodyParagraphs.push(...audienceBanner(audience))
+  bodyParagraphs.push(spacer())
 
   // Exercices : AU + correction sur même page
   for (const block of exerciceBlocks) {
