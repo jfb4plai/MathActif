@@ -24,6 +24,13 @@ describe('splitAuByExercice', () => {
     expect(result[1].texte).not.toContain('Q1')
   })
 
+  it('le texte du premier exercice ne contient pas le contenu du second', () => {
+    const texte = 'Exercice 1\nQ1\n___\nExercice 2\nQ2\n___'
+    const result = splitAuByExercice(texte)
+    expect(result[0].texte).toContain('Q1')
+    expect(result[0].texte).not.toContain('Q2')
+  })
+
   it('ignore le texte avant le premier exercice', () => {
     const texte = 'En-tête\nSéquence\nExercice 1\nQ1\n___'
     const result = splitAuByExercice(texte)
