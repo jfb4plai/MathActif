@@ -9,6 +9,7 @@ import { exportAuMathDocx, exportProfilMathDocx } from '../lib/exportMathDocx'
 import { buildMethodeTemplate } from '../lib/methodeTemplates'
 import { RAPPEL_STATIQUE, detectChapitreKey } from '../lib/rappelData'
 import MathDisplay from '../components/MathDisplay'
+import CorrigePanel from '../components/CorrigePanel'
 
 // ── Validation AU maths (client-side) ────────────────────────
 function validateMathAuRules(text) {
@@ -681,6 +682,17 @@ export default function MathAdapter() {
               >
                 {exporting ? 'Export…' : '⬇ Exporter AU universel (.docx)'}
               </button>
+
+              {auTexte && auValidation && (
+                <CorrigePanel
+                  auTexte={auTexte}
+                  chapitre={chapitre}
+                  niveau={niveau}
+                  typeEnseignement={typeEns}
+                  selectedRappelLines={getSelectedRappelLines()}
+                  methodeTemplate={useMethodeFixed ? methodeEdit : null}
+                />
+              )}
             </div>
           )}
         </div>
