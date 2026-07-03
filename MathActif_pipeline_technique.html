@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathActif — Pipeline technique</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, Arial, sans-serif; font-size: 14px; color: #1a1a1a; background: #faf9f7; padding: 32px 24px; }
+  header { border-bottom: 3px solid #0a9370; padding-bottom: 12px; margin-bottom: 24px; }
+  header h1 { font-size: 22px; color: #0a9370; font-weight: 700; }
+  header p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
+  th { background: #0a9370; color: #fff; font-weight: 600; font-size: 13px; padding: 10px 14px; text-align: left; }
+  td { padding: 10px 14px; vertical-align: top; border-bottom: 1px solid #e5e7eb; line-height: 1.6; font-size: 13px; }
+  tr:nth-child(even) td { background: #f9fafb; }
+  .stage { font-weight: 700; color: #0a9370; }
+  .env { font-size: 11px; color: #6b7280; display: block; margin-top: 2px; }
+  code { font-family: 'Courier New', monospace; font-size: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 3px; padding: 1px 5px; }
+  .lib { display: inline-block; margin: 2px 2px 2px 0; padding: 2px 7px; border-radius: 4px; font-size: 12px; font-family: 'Courier New', monospace; }
+  .lib-green { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
+  .lib-blue  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .lib-orange{ background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+  .highlight { color: #f97316; font-weight: 600; }
+  .note { background: #fff7ed; border-left: 4px solid #f97316; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 13px; color: #7c2d12; line-height: 1.6; }
+  .note strong { color: #9a3412; }
+  footer { font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MathActif — Pipeline technique</h1>
+  <p>PLAI Liège · Étapes, langages et bibliothèques · Document de référence</p>
+</header>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:13%">Étape</th>
+      <th style="width:22%">Ce qui se passe</th>
+      <th style="width:16%">Langage / Env.</th>
+      <th style="width:24%">Bibliothèques / API</th>
+      <th style="width:25%">Spécificité maths</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <span class="stage">1. Import .docx</span>
+        <span class="env">Navigateur</span>
+      </td>
+      <td>Extraction du texte + détection des équations Word natives</td>
+      <td>
+        <span class="lib lib-blue">JavaScript</span><br>
+        (React front)
+      </td>
+      <td>
+        <span class="lib lib-green">mammoth.js</span> — parse .docx<br>
+        <span class="lib lib-green">extractDocxMath.js</span> — custom OMML→texte
+      </td>
+      <td>Les équations Word sont en <span class="highlight">OMML</span> (XML natif). mammoth les ignore ; un parser custom les lit et les convertit en LaTeX intermédiaire <code>$...$</code></td>
+    </tr>
+    <tr>
+      <td>
+        <span class="stage">2. Import PDF / image</span>
+        <span class="env">Serveur Vercel</span>
+      </td>
+      <td>OCR + reconnaissance des expressions mathématiques</td>
+      <td>
+        <span class="lib lib-blue">Node.js</span><br>
+        (serverless)
+      </td>
+      <td>
+        <span class="lib lib-orange">Claude Sonnet</span> Vision<br>
+        <span class="lib lib-green">/api/extract.js</span><br>
+        Anthropic API
+      </td>
+      <td>Sonnet lit l'image et restitue le LaTeX exact de chaque équation. Un OCR classique (Tesseract) échoue sur ∫, Σ, fractions. Sonnet les lit nativement.</td>
+    </tr>
+    <tr>
+      <td>
+        <span class="stage">3. Protection des équations</span>
+        <span class="env">Navigateur</span>
+      </td>
+      <td>Remplacement de chaque formule par un token opaque avant envoi à Haiku</td>
+      <td>
+        <span class="lib lib-blue">JavaScript</span>
+      </td>
+      <td>
+        <span class="lib lib-green">mathProtect.js</span> — custom<br>
+        Regex + Map
+      </td>
+      <td>Sans cette étape, Haiku reformule les équations : <code>f'(x)</code> devient « la dérivée de f », <code>∫</code> disparaît. Les tokens <code>«MATH_N»</code> sont déplacés sans être touchés.</td>
+    </tr>
+    <tr>
+      <td>
+        <span class="stage">4. Génération AU (IA)</span>
+        <span class="env">Serveur Vercel</span>
+      </td>
+      <td>Numérotation, zones de travail, même plan, Données/Inconnues</td>
+      <td>
+        <span class="lib lib-blue">Node.js</span><br>
+        (serverless)
+      </td>
+      <td>
+        <span class="lib lib-orange">Claude Haiku</span><br>
+        claude-haiku-4-5-20251001<br>
+        max_tokens : 3 000
+      </td>
+      <td>Haiku restructure le document sans toucher aux équations. Le budget token est critique : 3 000 tokens ≈ 18 exercices max. Au-delà, le document est tronqué silencieusement.</td>
+    </tr>
+    <tr>
+      <td>
+        <span class="stage">5. Injection pédagogique</span>
+        <span class="env">Navigateur</span>
+      </td>
+      <td>Section Méthode (étapes) + formules RAPPEL sélectionnées ajoutées en tête</td>
+      <td>
+        <span class="lib lib-blue">JavaScript</span>
+      </td>
+      <td>
+        <span class="lib lib-green">methodeTemplates.js</span><br>
+        <span class="lib lib-green">rappelData.js</span><br>
+        (modules custom)
+      </td>
+      <td>Ces contenus sont <strong>statiques et garantis</strong> — ils ne passent pas par Haiku. L'enseignant les édite (80/20). Les formules RAPPEL sont en Unicode pur (∫, ², √) : lisibles sans plugin.</td>
+    </tr>
+    <tr>
+      <td>
+        <span class="stage">4b. Validation AU</span>
+        <span class="env">Navigateur</span>
+      </td>
+      <td>5 règles vérifiées côté client avant tout export ; deux règles bloquantes</td>
+      <td>
+        <span class="lib lib-blue">JavaScript</span>
+      </td>
+      <td>
+        <span class="lib lib-green">validateMathAuRules()</span> — custom<br>
+        Regex sur le texte restauré
+      </td>
+      <td>Règles vérifiées : exercices numérotés, zones de travail présentes (<code>___</code>), même plan, équations restaurées, absence de <code>[? ?]</code>. <span class="highlight">Export bloqué</span> si token <code>«MATH_N»</code> résiduel ou passage incertain non résolu — un exposant mal lu change tout l'exercice.</td>
+    </tr>
+    <tr>
+      <td>
+        <span class="stage">6. Export .docx</span>
+        <span class="env">Navigateur</span>
+      </td>
+      <td>Génération du fichier Word téléchargeable avec équations natives</td>
+      <td>
+        <span class="lib lib-blue">JavaScript</span>
+      </td>
+      <td>
+        <span class="lib lib-green">docx.js v9.6.1</span> — génération Word<br>
+        <span class="lib lib-green">file-saver</span> — téléchargement<br>
+        <span class="lib lib-green">exportMathDocx.js</span> — custom
+      </td>
+      <td>Les <code>$\frac{A}{B}$</code> sont convertis en <span class="highlight">OMML</span> natif (MathFraction, MathRadical, MathIntegral…). Éditables dans Word <em>et</em> MathType. <code>keepNext</code> garantit énoncé + zone de travail sur la même page.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Point clé pour un référent numérique :</strong> le format OMML est le seul format d'équation nativement éditable dans Word, sans plugin. Le choix de docx.js v9 (qui génère du vrai OMML) est la différence entre un document «&nbsp;image&nbsp;» et un document «&nbsp;vivant&nbsp;» — l'enseignant peut corriger une coquille directement dans Word ou MathType, sans repasser par l'application.
+</div>
+
+<footer>
+  MathActif — PLAI Liège · <a href="https://math-actif.vercel.app" style="color:#0a9370">math-actif.vercel.app</a> · Jean-François Beguin · jeanfrancois.beguin@ens.ecl.be
+</footer>
+
+</body>
+</html>
